@@ -324,11 +324,17 @@ class Browser {
       });
     }
 
+    await app.whenReady();
+
     await Promise.all(
       this.session.getAllExtensions().map(async (extension) => {
         const manifest = extension.manifest;
         if (manifest.manifest_version === 3 && manifest?.background?.service_worker) {
-          await this.session.serviceWorkers.startWorkerForScope(extension.url);
+          console.log("[LAUNCHER] Starting service worker for scope", extension.url);
+          await this.session.serviceWorkers.startWorkerForScope(extension.url).catch((error) => {
+            console.error("[LAUNCHER] Error starting service worker for scope", extension.url, error);
+          });
+          console.log("[LAUNCHER] Service worker started for scope", extension.url);
         }
       })
     );
@@ -351,7 +357,7 @@ class Browser {
       console.info(`service worker ${event.versionId} ${event.runningStatus}`);
     });
 
-    if (process.env.SHELL_DEBUG) {
+    if (process.env.FLOW_DEBUG) {
       this.session.serviceWorkers.once("running-status-changed", () => {
         const tab = this.windows[0]?.getFocusedTab();
         if (tab) {
@@ -385,7 +391,7 @@ class Browser {
     });
     this.windows.push(win);
 
-    if (process.env.SHELL_DEBUG) {
+    if (process.env.FLOW_DEBUG) {
       win.webContents.openDevTools({ mode: "detach" });
     }
 
@@ -401,7 +407,7 @@ class Browser {
     const url = webContents.getURL();
     console.log(`'web-contents-created' event [type:${type}, url:${url}]`);
 
-    if (process.env.SHELL_DEBUG && ["backgroundPage", "remote"].includes(webContents.getType())) {
+    if (process.env.FLOW_DEBUG && ["backgroundPage", "remote"].includes(webContents.getType())) {
       webContents.openDevTools({ mode: "detach", activate: true });
     }
 

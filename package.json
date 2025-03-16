@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "start": "bun --cwd ./vite build && bun --cwd ./electron start",
+    "start:debug": "cross-env FLOW_DEBUG=true && bun --cwd ./vite build && bun --cwd ./electron start",
     "build": "bun --cwd ./vite build && bun --cwd ./electron package",
     "format": "prettier --write ."
   },
