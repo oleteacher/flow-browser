@@ -155,10 +155,16 @@ function App() {
       }
 
       setTabs((prevTabs) =>
-        prevTabs.map((tab) => ({
-          ...tab,
-          active: tab.id === activeInfo.tabId
-        }))
+        prevTabs.map((tab) => {
+          // Ignore tabs that are not in the current window
+          if (tab.windowId !== currentWindow?.id) return tab;
+
+          // Update the active tab if it is in the current window
+          return {
+            ...tab,
+            active: tab.id === activeInfo.tabId
+          };
+        })
       );
 
       console.log("Tab Activated!", activeInfo.tabId, activeInfo.windowId);

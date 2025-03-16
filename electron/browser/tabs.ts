@@ -43,7 +43,7 @@ class Tab {
     this.hide();
 
     if (this.window) {
-      if (this.view) {
+      if (this.window && !this.window.isDestroyed() && this.view) {
         this.window.contentView.removeChildView(this.view);
       }
       this.window = undefined;
@@ -137,13 +137,17 @@ export class Tabs extends EventEmitter {
   }
 
   destroy() {
-    this.tabList.forEach((tab) => tab.destroy());
+    this.tabList.forEach((tab) => {
+      tab.destroy();
+    });
     this.tabList = [];
 
     this.selected = undefined;
 
     if (this.window) {
-      this.window.destroy();
+      if (!this.window.isDestroyed()) {
+        this.window.destroy();
+      }
       this.window = undefined;
     }
   }

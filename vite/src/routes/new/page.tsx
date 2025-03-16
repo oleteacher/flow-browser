@@ -107,7 +107,7 @@ function NewTabPage() {
           />
           <button
             type="submit"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full font-semibold cursor-pointer transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full font-semibold cursor-pointer transition-transform duration-200 hover:shadow-md"
           >
             Search
           </button>

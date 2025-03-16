@@ -77,6 +77,10 @@ class TabbedBrowserWindow {
     this.id = this.window.id;
     this.webContents = this.window.webContents;
 
+    this.window.on("close", () => {
+      this.destroy();
+    });
+
     // Load the WebUI extension
     this.loadWebUI();
 
@@ -89,6 +93,11 @@ class TabbedBrowserWindow {
 
       // Track tab that may have been created outside of the extensions API.
       self.extensions.addTab(tab.webContents, tab.window);
+    });
+
+    this.tabs.on("tab-destroyed", function onTabDestroyed(tab) {
+      // Track tab that may have been destroyed outside of the extensions API.
+      self.extensions.removeTab(tab.webContents);
     });
 
     this.tabs.on("tab-selected", function onTabSelected(tab) {
@@ -121,7 +130,10 @@ class TabbedBrowserWindow {
 
   destroy(): void {
     this.tabs.destroy();
-    this.window.destroy();
+
+    if (!this.window.isDestroyed()) {
+      this.window.destroy();
+    }
   }
 
   getFocusedTab() {
@@ -139,6 +151,7 @@ class Browser {
     newtab: "about:blank"
   };
   private ready: Promise<void>;
+  private readyResolved: boolean = false;
   private resolveReady!: () => void;
   private session!: Electron.Session;
   private extensions!: ElectronChromeExtensions;
@@ -147,6 +160,9 @@ class Browser {
   constructor() {
     this.ready = new Promise((resolve) => {
       this.resolveReady = resolve;
+    });
+    this.ready.then(() => {
+      this.readyResolved = true;
     });
 
     app.whenReady().then(this.init.bind(this));
@@ -158,6 +174,9 @@ class Browser {
     });
 
     app.on("activate", () => {
+      // Not ready yet, don't create a window
+      if (!this.readyResolved) return;
+
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.
       if (BrowserWindow.getAllWindows().length === 0) this.createInitialWindow();
@@ -419,17 +438,10 @@ class Browser {
           return {
             action: "allow",
             outlivesOpener: true,
-            createWindow: ({
-              webContents: guest,
-              webPreferences
-            }: {
-              webContents: Electron.WebContents;
-              webPreferences?: Electron.WebPreferences;
-            }) => {
+            createWindow: ({ webPreferences }) => {
               const win = this.getWindowFromWebContents(webContents);
               if (!win) throw new Error("Unable to find window for web contents");
               const tab = win.tabs.create({
-                webContents: guest,
                 webPreferences
               });
               tab.loadURL(details.url);
