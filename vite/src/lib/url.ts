@@ -4,8 +4,7 @@ const whitelistedPages = ["new"];
 
 // Real Target Protocol -> Fake Browser Protocol
 const protocolReplacements = {
-  "chrome-extension://": "extension://",
-  [`${fakeBrowserProtocol}://`]: `chrome://`
+  "chrome-extension://": "extension://"
 };
 
 const SEARCH_ENGINE = "https://www.google.com/search?q=%s";
