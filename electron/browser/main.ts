@@ -8,6 +8,7 @@ import { installChromeWebStore, loadAllExtensions } from "electron-chrome-web-st
 // Import local modules
 import { Tabs } from "./tabs";
 import { setupMenu } from "./menu";
+import { FLAGS } from "../modules/flags";
 
 // Constants
 const FLOW_ROOT_DIR = path.join(__dirname, "../../");
@@ -366,11 +367,13 @@ class Browser {
     this.session = session.defaultSession;
 
     // Remove Electron and App details to closer emulate Chrome's UA
-    const userAgent = this.session
-      .getUserAgent()
-      .replace(/\sElectron\/\S+/, "")
-      .replace(new RegExp(`\\s${app.getName()}/\\S+`), "");
-    this.session.setUserAgent(userAgent);
+    if (FLAGS.SCRUBBED_USER_AGENT) {
+      const userAgent = this.session
+        .getUserAgent()
+        .replace(/\sElectron\/\S+/, "")
+        .replace(new RegExp(`\\s${app.getName()}/\\S+`, "i"), "");
+      this.session.setUserAgent(userAgent);
+    }
 
     this.session.serviceWorkers.on("running-status-changed", (event) => {
       console.info(`service worker ${event.versionId} ${event.runningStatus}`);
