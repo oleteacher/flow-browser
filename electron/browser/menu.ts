@@ -4,12 +4,46 @@ import Browser from "./main";
 export const setupMenu = (browser: Browser) => {
   const isMac = process.platform === "darwin";
 
-  const tab = () => browser.getFocusedWindow().getFocusedTab();
-  const tabWc = () => tab().webContents;
+  const getFocusedWindow = () => {
+    return browser.getFocusedWindow();
+  };
+  const getTab = () => {
+    const win = getFocusedWindow();
+    if (!win) return null;
+
+    const tab = win.getFocusedTab();
+    if (!tab) return null;
+    return tab;
+  };
+  const getTabWc = () => {
+    const tab = getTab();
+    if (!tab) return null;
+    return tab.webContents;
+  };
 
   const template: Array<MenuItemConstructorOptions | MenuItem> = [
     ...(isMac ? [{ role: "appMenu" as const }] : []),
-    { role: "fileMenu" as const },
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "New Tab",
+          accelerator: "CmdOrCtrl+T",
+          click: () => {
+            const win = getFocusedWindow();
+            if (!win) return;
+            win.tabs.create();
+          }
+        },
+        {
+          label: "New Window",
+          accelerator: "CmdOrCtrl+N",
+          click: () => {
+            browser.createWindow();
+          }
+        }
+      ]
+    },
     { role: "editMenu" as const },
     {
       label: "View",
@@ -17,17 +51,38 @@ export const setupMenu = (browser: Browser) => {
         {
           label: "Reload",
           accelerator: "CmdOrCtrl+R",
-          click: () => tabWc().reload()
+          click: () => {
+            const tabWc = getTabWc();
+            if (!tabWc) return;
+            tabWc.reload();
+          }
         },
         {
           label: "Force Reload",
           accelerator: "Shift+CmdOrCtrl+R",
-          click: () => tabWc().reloadIgnoringCache()
+          click: () => {
+            const tabWc = getTabWc();
+            if (!tabWc) return;
+            tabWc.reloadIgnoringCache();
+          }
         },
         {
-          label: "Toggle Developer Tool asdf",
+          label: "Close Tab",
+          accelerator: "CmdOrCtrl+W",
+          click: () => {
+            const tab = getTab();
+            if (!tab) return;
+            tab.destroy();
+          }
+        },
+        {
+          label: "Toggle Developer Tool",
           accelerator: isMac ? "Alt+Command+I" : "Ctrl+Shift+I",
-          click: () => tabWc().toggleDevTools()
+          click: () => {
+            const tabWc = getTabWc();
+            if (!tabWc) return;
+            tabWc.toggleDevTools();
+          }
         },
         { type: "separator" },
         { role: "resetZoom" as const },

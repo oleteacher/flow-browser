@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, dialog, WebContents } from "electron";
+import { app, session, BrowserWindow, dialog, WebContents, Menu } from "electron";
 import path from "path";
 import fs from "fs";
 import { ElectronChromeExtensions } from "electron-chrome-extensions";
@@ -77,10 +77,6 @@ class TabbedBrowserWindow {
     this.window = new BrowserWindow(options.window);
     this.id = this.window.id;
     this.webContents = this.window.webContents;
-
-    this.window.on("close", () => {
-      this.destroy();
-    });
 
     // Load the WebUI extension
     this.loadWebUI();
@@ -411,7 +407,12 @@ class Browser {
         }
       }
     });
+
     this.windows.push(win);
+    win.getBrowserWindow().on("close", () => {
+      this.windows = this.windows.filter((w) => w.id !== win.id);
+      win.destroy();
+    });
 
     if (process.env.FLOW_DEBUG) {
       win.webContents.openDevTools({ mode: "detach" });
