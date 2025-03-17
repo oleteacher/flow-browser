@@ -37,7 +37,7 @@ function NewTabPage() {
       name: "GitHub",
       url: "https://github.com",
       icon: GitHub,
-      extraClass: "bg-gray-700 p-1 rounded-full"
+      extraClass: "bg-gray-700 dark:bg-gray-800 p-1 rounded-full"
     },
     {
       name: "Gmail",
@@ -78,14 +78,14 @@ function NewTabPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 dark:bg-gray-900 dark:text-white p-8 font-sans transition-colors duration-300">
+    <div className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-br from-gray-50 to-blue-100 dark:from-gray-900 dark:to-gray-800 dark:text-white p-8 font-sans transition-colors duration-300">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="mb-8 text-center"
       >
-        <h1 className="text-4xl font-bold m-0 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent dark:text-blue-400 dark:bg-clip-text-none">
+        <h1 className="text-4xl font-bold m-0 bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-300">
           Flow Browser
         </h1>
       </motion.div>
@@ -102,12 +102,12 @@ function NewTabPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search or enter website name"
-            className="w-full py-3 px-6 text-lg rounded-full bg-white border-none text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400 shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-blue-500 transition-all duration-200"
+            className="w-full py-3 px-6 text-lg rounded-full bg-white border-none text-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-400 shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-blue-400 transition-all duration-200"
             autoFocus
           />
           <button
             type="submit"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-500 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full font-semibold cursor-pointer transition-transform duration-200 hover:shadow-md"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 py-2 px-4 bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400 text-white rounded-full font-semibold cursor-pointer transition-transform duration-200 hover:shadow-md"
           >
             Search
           </button>
