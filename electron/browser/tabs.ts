@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import { WebContents, BrowserWindow, WebContentsView } from "electron";
+import { FLAGS } from "../modules/flags";
 
 const toolbarHeight = 68;
 
@@ -31,6 +32,24 @@ class Tab {
     this.window = parentWindow;
     this.webContents = this.view.webContents;
     this.destroyed = false;
+
+    this.webContents.on("did-fail-load", (event, errorCode, _errorDescription, validatedURL, isMainFrame) => {
+      event.preventDefault();
+
+      // ignore -3 (ABORTED) - An operation was aborted (due to user action).
+      if (isMainFrame && errorCode !== -3) {
+        const errorPageURL = new URL("flow-utility://page/error");
+        errorPageURL.searchParams.set("errorCode", errorCode.toString());
+        errorPageURL.searchParams.set("url", validatedURL);
+        errorPageURL.searchParams.set("initial", "1");
+
+        if (FLAGS.ERROR_PAGE_LOAD_MODE === "replace") {
+          this.webContents.executeJavaScript(`window.location.replace("${errorPageURL.toString()}")`);
+        } else {
+          this.webContents.loadURL(errorPageURL.toString());
+        }
+      }
+    });
 
     this.window.contentView.addChildView(this.view);
   }
