@@ -1,4 +1,4 @@
-import { app, session, BrowserWindow, dialog, WebContents, Menu, protocol } from "electron";
+import { app, session, BrowserWindow, dialog, WebContents, protocol, ipcMain } from "electron";
 import path from "path";
 import fs from "fs";
 import fsPromises from "fs/promises";
@@ -11,9 +11,11 @@ import { Tabs } from "./tabs";
 import { setupMenu } from "./menu";
 import { FLAGS } from "../modules/flags";
 import { getContentType } from "./utils";
+import { getNewTabMode, Omnibox } from "./omnibox";
 
 // Constants
 const FLOW_ROOT_DIR = path.join(__dirname, "../../");
+const WEBPACK_ROOT_DIR = path.join(FLOW_ROOT_DIR, ".webpack");
 const ROOT_DIR = path.join(FLOW_ROOT_DIR, "../");
 
 interface Paths {
@@ -28,7 +30,7 @@ const PATHS: Paths = {
     ? path.resolve(process.resourcesPath as string, "assets")
     : path.resolve(FLOW_ROOT_DIR, "assets"),
   VITE_WEBUI: app.isPackaged ? path.resolve(process.resourcesPath as string) : path.resolve(ROOT_DIR, "vite"),
-  PRELOAD: path.join(FLOW_ROOT_DIR, "renderer", "browser", "preload.js"),
+  PRELOAD: path.join(WEBPACK_ROOT_DIR, "renderer", "browser", "preload.js"),
   LOCAL_EXTENSIONS: path.join(ROOT_DIR, "extensions")
 };
 
@@ -67,6 +69,7 @@ class TabbedBrowserWindow {
   private extensions: ElectronChromeExtensions;
   private window: BrowserWindow;
   tabs: Tabs;
+  omnibox: Omnibox;
   public id: number;
   public webContents: WebContents;
 
@@ -103,7 +106,23 @@ class TabbedBrowserWindow {
       self.extensions.selectTab(tab.webContents);
     });
 
+    if (webuiExtensionId) {
+      this.omnibox = new Omnibox(this.window, webuiExtensionId);
+    }
+
     queueMicrotask(() => {
+      // If you do not create a tab, ElectronChromeExtensions will not register the new window.
+      // This is such a weird behavior, but oh well.
+      if (getNewTabMode() === "omnibox") {
+        const tab = this.tabs.create();
+        tab.loadURL("about:blank");
+        // may need to adjust the delay here in the future
+        setTimeout(() => {
+          tab.destroy();
+        }, 150);
+        return;
+      }
+
       // Create initial tab
       const tab = this.tabs.create();
 
@@ -116,8 +135,19 @@ class TabbedBrowserWindow {
   async loadWebUI(): Promise<void> {
     if (webuiExtensionId) {
       console.log("Loading WebUI from extension");
+
+      // const webuiUrl = "flow-utility://page/error?url=http://abc.com&initial=1";
+      // const webuiUrl = `chrome-extension://${webuiExtensionId}/error/index.html?url=http://abc.com&initial=1`;
       const webuiUrl = `chrome-extension://${webuiExtensionId}/main/index.html`;
       await this.webContents.loadURL(webuiUrl);
+      await this.webContents.insertCSS(
+        `:root, html, body {
+  background: unset !important;
+  background-color: unset !important;
+  color: unset !important;
+}`,
+        { cssOrigin: "user" }
+      );
     } else {
       console.error("WebUI extension ID not available");
     }
@@ -393,20 +423,27 @@ export class Browser {
       urls: this.urls,
       extensions: this.extensions,
       window: {
+        minWidth: 800,
+        minHeight: 400,
         width: 1280,
         height: 720,
-        frame: false,
         titleBarStyle: "hidden",
         titleBarOverlay: {
-          height: 31,
-          color: "#39375b",
-          symbolColor: "#ffffff"
+          height: 30,
+          color: "#39375b"
         },
         webPreferences: {
           sandbox: true,
           nodeIntegration: false,
           contextIsolation: true
-        }
+        },
+        frame: false,
+        transparent: false,
+        resizable: true,
+        backgroundColor: "#00000000",
+        visualEffectState: "followWindow",
+        vibrancy: "fullscreen-ui", // on MacOS
+        backgroundMaterial: "acrylic" // on Windows
       }
     });
 
@@ -414,6 +451,9 @@ export class Browser {
     win.getBrowserWindow().on("close", () => {
       this.windows = this.windows.filter((w) => w.id !== win.id);
       win.destroy();
+    });
+    win.getBrowserWindow().on("closed", () => {
+      this.windows = this.windows.filter((w) => w.id !== win.id);
     });
 
     if (process.env.FLOW_DEBUG) {
@@ -444,12 +484,10 @@ export class Browser {
           return {
             action: "allow",
             outlivesOpener: true,
-            createWindow: ({ webPreferences }) => {
+            createWindow: (constructionOptions) => {
               const win = this.getWindowFromWebContents(webContents);
               if (!win) throw new Error("Unable to find window for web contents");
-              const tab = win.tabs.create({
-                webPreferences
-              });
+              const tab = win.tabs.create(constructionOptions);
               tab.loadURL(details.url);
               return tab.webContents;
             }
@@ -486,7 +524,7 @@ export class Browser {
 }
 
 app.whenReady().then(() => {
-  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error"];
+  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error", "main"];
 
   protocol.handle("flow-utility", async (request) => {
     const urlString = request.url;
@@ -553,4 +591,19 @@ app.whenReady().then(() => {
       return new Response("File not found", { status: 404 });
     }
   });
+});
+
+// IPC Handlers //
+ipcMain.on("set-window-button-position", (event, position: { x: number; y: number }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && "setWindowButtonPosition" in win) {
+    win.setWindowButtonPosition(position);
+  }
+});
+
+ipcMain.on("set-window-button-visibility", (event, visible: boolean) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && "setWindowButtonVisibility" in win) {
+    win.setWindowButtonVisibility(visible);
+  }
 });

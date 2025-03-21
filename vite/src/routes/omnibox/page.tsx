@@ -1,14 +1,14 @@
-import { BrowserUI } from "@/components/browser-ui/main";
+import { Omnibox } from "@/components/omnibox/main";
 import { BrowserProvider } from "@/components/main/browser-context";
 
-function BrowserApp() {
-  return <BrowserUI />;
+function OmniboxApp() {
+  return <Omnibox />;
 }
 
 function App() {
   return (
     <BrowserProvider>
-      <BrowserApp />
+      <OmniboxApp />
     </BrowserProvider>
   );
 }

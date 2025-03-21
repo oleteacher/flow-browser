@@ -6,9 +6,17 @@ A modern, tabbed web browser with Chrome extension support—built on Electron.
   <img src="./electron/assets/AppIcon.png" width="128" height="128" alt="Flow Browser Logo" />
 </p>
 
+[![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/MultiboxLabs/flow-browser?utm_source=oss&utm_medium=github&utm_campaign=MultiboxLabs%2Fflow-browser&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 ## Overview
 
 Flow Browser is a lightweight, feature-rich web browser that combines the power of Chromium with a clean, modern interface. Built on Electron, it offers full support for Chrome extensions, making it a versatile alternative to mainstream browsers.
+
+## Screenshots
+
+![Flow Browser Screenshot](./assets/screenshots/beta-1.png)
+![Flow Browser Screenshot](./assets/screenshots/beta-2.png)
 
 ## Features
 
@@ -72,3 +80,5 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - s
 ## Acknowledgements
 
 Some parts of Flow Browser are based on [electron-browser-shell](https://github.com/samuelmaddock/electron-browser-shell) by [Sam Maddock](https://github.com/samuelmaddock), with enhancements and modifications.
+
+Design inspired by [Arc Browser](https://arc.net) and [Zen Browser](https://zen-browser.app/), which has a minimalistic design that is clean and simple.
