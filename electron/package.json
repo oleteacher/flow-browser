@@ -1,14 +1,20 @@
 {
   "name": "flow-browser",
   "productName": "Flow",
-  "version": "0.0.1",
+  "version": "0.0.12",
   "description": "An experimental browser built on Electron.",
   "main": ".webpack/main",
+  "author": {
+    "name": "iamEvan",
+    "email": "evan@iamevan.dev",
+    "url": "https://iamevan.dev"
+  },
   "scripts": {
     "start": "electron-forge start",
     "start:trace": "electron-forge start -- --trace-startup=\"*\" --trace-startup-file=\"$HOME/Desktop/trace.json\"",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "release": "electron-forge publish"
   },
   "license": "MIT",
   "private": true,
@@ -16,21 +22,25 @@
     "electron-chrome-context-menu": "npm:@iamevan/electron-chrome-context-menu@1.1.0",
     "electron-chrome-extensions": "npm:@iamevan/electron-chrome-extensions@4.6.5",
     "electron-chrome-web-store": "npm:@iamevan/electron-chrome-web-store@0.10.0",
-    "electron-squirrel-startup": "^1.0.0",
-    "mime-types": "^2.1.35"
+    "electron-squirrel-startup": "^1.0.1",
+    "mime-types": "^2.1.35",
+    "update-electron-app": "^3.1.1"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^7.5.0",
-    "@electron-forge/maker-dmg": "^7.5.0",
-    "@electron-forge/maker-squirrel": "^7.5.0",
-    "@electron-forge/maker-zip": "^7.5.0",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.5.0",
-    "@electron-forge/plugin-webpack": "^7.5.0",
+    "@electron-forge/cli": "^7.7.0",
+    "@electron-forge/maker-dmg": "^7.7.0",
+    "@electron-forge/maker-flatpak": "^7.7.0",
+    "@electron-forge/maker-squirrel": "^7.7.0",
+    "@electron-forge/maker-zip": "^7.7.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.7.0",
+    "@electron-forge/plugin-webpack": "^7.7.0",
+    "@electron-forge/publisher-github": "^7.7.0",
     "@types/mime-types": "^2.1.4",
-    "copy-webpack-plugin": "^11.0.0",
-    "cross-env": "^7.0.2",
-    "electron": "^35.0.2",
-    "fs-extra": "^11.2.0",
-    "ts-loader": "^9.5.2"
+    "copy-webpack-plugin": "^13.0.0",
+    "cross-env": "^7.0.3",
+    "electron": "^35.0.3",
+    "fs-extra": "^11.3.0",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2"
   }
 }
