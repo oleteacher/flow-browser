@@ -78,7 +78,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 flex flex-col items-center pt-24 px-4 transition-colors duration-300">
-      <title>{url || "Error | Flow Browser"}</title>
+      <title>{url || "Error"}</title>
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

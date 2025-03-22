@@ -16,32 +16,6 @@ export function getURLFromInput(input: string): string | null {
   // Check if input is empty
   if (!trimmedInput) return null;
 
-  // Check for common protocols
-  const commonProtocols = [
-    "http://",
-    "https://",
-    "chrome-extension://",
-    "file://",
-    "ftp://",
-    "mailto:",
-    "tel:",
-    "data:"
-  ];
-
-  for (const protocol of commonProtocols) {
-    if (trimmedInput.startsWith(protocol)) {
-      return trimmedInput;
-    }
-  }
-
-  // Check if it looks like a URL using a more robust regex pattern
-  // This regex checks for domain patterns like example.com, sub.example.co.uk, etc.
-  const urlRegex = /^([-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&//=]*))$/;
-  // If the input is a valid URL, return it
-  if (urlRegex.test(trimmedInput)) {
-    return `http://${trimmedInput}`;
-  }
-
   // Check if it looks like a main UI URL (flow://main or flow://new)
   if (trimmedInput.startsWith(`${fakeBrowserProtocol}://`)) {
     // return `chrome-extension://<extensionId>/[page]/index.html`
@@ -56,6 +30,20 @@ export function getURLFromInput(input: string): string | null {
     if (trimmedInput.startsWith(value)) {
       return trimmedInput.replace(new RegExp(`^${value}`), key);
     }
+  }
+
+  // Check for protocol pattern (anything followed by ://)
+  const protocolRegex = /^[a-zA-Z0-9.+-]+:\/\//;
+  if (protocolRegex.test(trimmedInput)) {
+    return trimmedInput;
+  }
+
+  // Check if it looks like a URL using a more robust regex pattern
+  // This regex checks for domain patterns like example.com, sub.example.co.uk, etc.
+  const urlRegex = /^([-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&//=]*))$/;
+  // If the input is a valid URL, return it
+  if (urlRegex.test(trimmedInput)) {
+    return `http://${trimmedInput}`;
   }
 
   return null;
