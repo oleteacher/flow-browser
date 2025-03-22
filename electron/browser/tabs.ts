@@ -34,14 +34,20 @@ class Tab {
       this.view = new WebContentsView({
         webContents: webContentsViewOptions.webContents,
         webPreferences: {
-          ...(webContentsViewOptions.webPreferences || {})
+          ...(webContentsViewOptions.webPreferences || {}),
+          offscreen: {
+            useSharedTexture: true
+          }
         }
       });
     } else {
       // Otherwise create a new WebContentsView without specifying webContents
       this.view = new WebContentsView({
         webPreferences: {
-          ...(webContentsViewOptions.webPreferences || {})
+          ...(webContentsViewOptions.webPreferences || {}),
+          offscreen: {
+            useSharedTexture: true
+          }
         }
       });
     }
