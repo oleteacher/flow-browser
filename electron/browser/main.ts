@@ -1,4 +1,13 @@
-import { app, session, BrowserWindow, dialog, WebContents, protocol, ipcMain } from "electron";
+import {
+  app,
+  session,
+  BrowserWindow,
+  dialog,
+  WebContents,
+  protocol,
+  ipcMain,
+  OpenExternalPermissionRequest
+} from "electron";
 import path from "path";
 import fs from "fs";
 import fsPromises from "fs/promises";
@@ -384,6 +393,46 @@ export class Browser {
 
   initSession(): void {
     this.session = session.defaultSession;
+
+    this.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
+      if (FLAGS.SHOW_DEBUG_PRINTS) {
+        console.log("permission request", webContents?.getURL(), permission);
+      }
+
+      if (permission === "openExternal") {
+        const openExternalDetails = details as OpenExternalPermissionRequest;
+
+        const externalAppName =
+          app.getApplicationNameForProtocol(openExternalDetails.externalURL) || "an unknown application";
+
+        const url = new URL(openExternalDetails.requestingUrl);
+        const minifiedUrl = `${url.protocol}//${url.host}`;
+
+        dialog
+          .showMessageBox({
+            message: `${minifiedUrl} wants to open ${externalAppName}. Continue?`,
+            buttons: ["Cancel", "Open"]
+          })
+          .then((response) => {
+            if (response.response === 1) {
+              callback(true);
+            } else {
+              callback(false);
+            }
+          });
+
+        return;
+      }
+
+      callback(true);
+    });
+
+    this.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+      if (FLAGS.SHOW_DEBUG_PRINTS) {
+        console.log("permission check", webContents?.getURL(), permission);
+      }
+      return true;
+    });
 
     // Remove Electron and App details to closer emulate Chrome's UA
     if (FLAGS.SCRUBBED_USER_AGENT) {
