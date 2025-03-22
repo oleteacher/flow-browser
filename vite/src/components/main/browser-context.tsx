@@ -22,6 +22,7 @@ type BrowserContextType = {
   handleMinimize: () => void;
   handleMaximize: () => void;
   handleClose: () => void;
+  handleCloseAllTabs: () => void;
 };
 
 const BrowserContext = createContext<BrowserContextType | null>(null);
@@ -293,6 +294,23 @@ export const BrowserProvider = ({ children }: { children: ReactNode }) => {
     chrome.windows.remove(currentWindow.id);
   }, [currentWindow]);
 
+  const handleCloseAllTabs = useCallback(() => {
+    const tabsAmount = tabs.length;
+    tabs.forEach((tab) => {
+      if (tab.id) {
+        if (tabsAmount > 1) {
+          if (!tab.active) {
+            chrome.tabs.remove(tab.id);
+          }
+        } else {
+          chrome.tabs.remove(tab.id);
+        }
+      }
+    });
+
+    // TODO: Notify the user that tabs were all closed?
+  }, [tabs]);
+
   const value = {
     tabs,
     activeTabId,
@@ -310,7 +328,8 @@ export const BrowserProvider = ({ children }: { children: ReactNode }) => {
     handleReload,
     handleMinimize,
     handleMaximize,
-    handleClose
+    handleClose,
+    handleCloseAllTabs
   };
 
   return <BrowserContext.Provider value={value}>{children}</BrowserContext.Provider>;

@@ -1,9 +1,15 @@
 import { SidebarTab } from "@/components/browser-ui/sidebar/tab";
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton } from "@/components/ui/resizable-sidebar";
+import {
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton
+} from "@/components/ui/resizable-sidebar";
 import { useBrowser } from "@/components/main/browser-context";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { showOmnibox } from "@/lib/flow";
 import { getNewTabMode } from "@/lib/omnibox";
 
@@ -45,14 +51,19 @@ function NewTabButton() {
 }
 
 export function SidebarTabs() {
-  const { tabs } = useBrowser();
+  const { tabs, handleCloseAllTabs } = useBrowser();
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="select-none">Tabs</SidebarGroupLabel>
+      <SidebarGroupAction onClick={handleCloseAllTabs}>
+        <Trash2Icon className="size-1.5 m-1 text-muted-foreground" />
+      </SidebarGroupAction>
       <SidebarMenu>
         <NewTabButton />
-        {tabs.map((tab) => <SidebarTab key={tab.id} tab={tab} />).reverse()}
+        <AnimatePresence initial={true}>
+          {tabs.map((tab) => <SidebarTab key={tab.id} tab={tab} />).reverse()}
+        </AnimatePresence>
       </SidebarMenu>
     </SidebarGroup>
   );
