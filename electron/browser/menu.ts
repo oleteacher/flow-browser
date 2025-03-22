@@ -61,6 +61,12 @@ export const setupMenu = (browser: Browser) => {
       label: "View",
       submenu: [
         {
+          // TODO: Implement toggle sidebar
+          label: "Toggle Sidebar",
+          enabled: false
+        },
+        { type: "separator" },
+        {
           label: "Reload",
           accelerator: "CmdOrCtrl+R",
           click: () => {
