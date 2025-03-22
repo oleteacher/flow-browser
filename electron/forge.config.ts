@@ -39,6 +39,7 @@ syncVersion();
 const config: ForgeConfig = {
   packagerConfig: {
     name: "Flow",
+    executableName: "flow",
     asar: true,
     extraResource: ["../vite/dist", "assets"],
     icon: "assets/AppIcon",

@@ -31,11 +31,11 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install Flatpak dependencies (Ubuntu only)
+      - name: Install Build Dependencies (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak-builder elfutils
+          sudo apt-get install -y flatpak-builder elfutils dpkg fakeroot
 
       - name: Setup Flatpak (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
