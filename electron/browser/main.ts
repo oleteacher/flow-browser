@@ -113,15 +113,6 @@ class TabbedBrowserWindow {
     queueMicrotask(() => {
       // If you do not create a tab, ElectronChromeExtensions will not register the new window.
       // This is such a weird behavior, but oh well.
-      if (getNewTabMode() === "omnibox") {
-        const tab = this.tabs.create();
-        tab.loadURL("about:blank");
-        // may need to adjust the delay here in the future
-        setTimeout(() => {
-          tab.destroy();
-        }, 150);
-        return;
-      }
 
       // Create initial tab
       const tab = this.tabs.create();
@@ -524,7 +515,7 @@ export class Browser {
 }
 
 app.whenReady().then(() => {
-  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error", "main"];
+  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error"];
 
   protocol.handle("flow-utility", async (request) => {
     const urlString = request.url;
