@@ -58,7 +58,7 @@ const config: ForgeConfig = {
 
     // MacOS
     new MakerDMG({
-      name: "FlowInstaller.dmg",
+      name: "FlowInstaller",
       title: "Flow Installer",
       icon: "./assets/AppIcon.icns"
     }),
