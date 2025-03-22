@@ -20,7 +20,7 @@ import { Tabs } from "./tabs";
 import { setupMenu } from "./menu";
 import { FLAGS } from "../modules/flags";
 import { getContentType } from "./utils";
-import { getNewTabMode, Omnibox } from "./omnibox";
+import { Omnibox } from "./omnibox";
 
 // Constants
 const FLOW_ROOT_DIR = path.join(__dirname, "../../");

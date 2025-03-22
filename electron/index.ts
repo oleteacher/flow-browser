@@ -1,8 +1,13 @@
-import { app, ipcMain } from "electron";
+import { app, ipcMain, Menu, MenuItem } from "electron";
 import { Browser } from "./browser/main";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 
 if (require("electron-squirrel-startup")) app.quit();
+
+// Function to check if --new-window flag is present in command line arguments
+function shouldCreateNewWindow(args: string[]): boolean {
+  return args.includes("--new-window");
+}
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -11,11 +16,17 @@ if (!gotTheLock) {
 } else {
   const browser = new Browser();
 
-  app.on("second-instance", (_event, _commandLine, _workingDirectory, _additionalData) => {
-    // Someone tried to run a second instance, we should focus our window.
-    const window = browser.getWindows()[0];
-    if (window) {
-      window.getBrowserWindow().focus();
+  app.on("second-instance", (_event, commandLine, _workingDirectory, _additionalData) => {
+    // Check if the second instance was launched with --new-window flag
+    if (shouldCreateNewWindow(commandLine)) {
+      // Create a new window instead of focusing the existing one
+      browser.createWindow();
+    } else {
+      // Default behavior: focus the first window
+      const window = browser.getWindows()[0];
+      if (window) {
+        window.getBrowserWindow().focus();
+      }
     }
   });
 
@@ -61,6 +72,7 @@ if (!gotTheLock) {
     return tab.webContents.navigationHistory.goToIndex(index);
   });
 
+  // Auto Update //
   updateElectronApp({
     updateSource: {
       type: UpdateSourceType.ElectronPublicUpdateService,
@@ -68,4 +80,42 @@ if (!gotTheLock) {
     },
     notifyUser: true
   });
+
+  // Set Toolbar Options //
+  if (process.platform === "win32") {
+    app.setUserTasks([
+      {
+        program: process.execPath,
+        arguments: "--new-window",
+        iconPath: process.execPath,
+        iconIndex: 0,
+        title: "New Window",
+        description: "Create a new window"
+      }
+    ]);
+  } else if (process.platform === "darwin") {
+    const dockMenu = new Menu();
+
+    dockMenu.append(
+      new MenuItem({
+        label: "New Window",
+        click: () => {
+          browser.createWindow();
+        }
+      })
+    );
+
+    dockMenu.append(
+      // TODO: Incognito Window
+      // Not implemented yet
+      new MenuItem({
+        label: "New Incognito Window",
+        enabled: false
+      })
+    );
+
+    app.whenReady().then(() => {
+      app.dock.setMenu(dockMenu);
+    });
+  }
 }
