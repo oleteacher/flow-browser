@@ -39,7 +39,7 @@ syncVersion();
 const config: ForgeConfig = {
   packagerConfig: {
     name: "Flow",
-    executableName: "flow",
+    executableName: "flow-browser",
     asar: true,
     extraResource: ["../vite/dist", "assets"],
     icon: "assets/AppIcon",
@@ -65,7 +65,11 @@ const config: ForgeConfig = {
 
     // Linux
     new MakerFlatpak({}),
-    new MakerDeb({}),
+    new MakerDeb({
+      options: {
+        productName: "Flow"
+      }
+    }),
 
     // Universal
     new MakerZIP({})
