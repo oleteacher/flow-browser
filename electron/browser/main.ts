@@ -483,7 +483,8 @@ export class Browser {
         backgroundColor: "#00000000",
         visualEffectState: "followWindow",
         vibrancy: "fullscreen-ui", // on MacOS
-        backgroundMaterial: "acrylic" // on Windows
+        backgroundMaterial: "acrylic", // on Windows
+        roundedCorners: true
       }
     });
 
