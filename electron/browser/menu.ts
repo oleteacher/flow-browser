@@ -1,6 +1,7 @@
 import { Menu, type MenuItem, type MenuItemConstructorOptions } from "electron";
 import { Browser } from "./main";
 import { getNewTabMode, hideOmnibox, isOmniboxOpen, loadOmnibox, setOmniboxBounds, showOmnibox } from "./omnibox";
+
 export const setupMenu = (browser: Browser) => {
   const isMac = process.platform === "darwin";
 
@@ -125,6 +126,29 @@ export const setupMenu = (browser: Browser) => {
         { role: "zoomOut" as const },
         { type: "separator" },
         { role: "togglefullscreen" as const }
+      ]
+    },
+    {
+      label: "Archive",
+      submenu: [
+        {
+          label: "Go Back",
+          accelerator: "CmdOrCtrl+Left",
+          click: () => {
+            const tabWc = getTabWc();
+            if (!tabWc) return;
+            tabWc.navigationHistory.goBack();
+          }
+        },
+        {
+          label: "Go Forward",
+          accelerator: "CmdOrCtrl+Right",
+          click: () => {
+            const tabWc = getTabWc();
+            if (!tabWc) return;
+            tabWc.navigationHistory.goForward();
+          }
+        }
       ]
     },
     { role: "windowMenu" as const }
