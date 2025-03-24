@@ -1,16 +1,6 @@
-import {
-  app,
-  session,
-  BrowserWindow,
-  dialog,
-  WebContents,
-  protocol,
-  ipcMain,
-  OpenExternalPermissionRequest
-} from "electron";
+import { app, session, BrowserWindow, dialog, WebContents, ipcMain, OpenExternalPermissionRequest } from "electron";
 import path from "path";
 import fs from "fs";
-import fsPromises from "fs/promises";
 import { ElectronChromeExtensions } from "electron-chrome-extensions";
 import { buildChromeContextMenu } from "electron-chrome-context-menu";
 import { installChromeWebStore, loadAllExtensions } from "electron-chrome-web-store";
@@ -19,29 +9,10 @@ import { installChromeWebStore, loadAllExtensions } from "electron-chrome-web-st
 import { Tabs } from "./tabs";
 import { setupMenu } from "./menu";
 import { FLAGS } from "../modules/flags";
-import { getContentType } from "./utils";
 import { Omnibox } from "./omnibox";
-
-// Constants
-const FLOW_ROOT_DIR = path.join(__dirname, "../../");
-const WEBPACK_ROOT_DIR = path.join(FLOW_ROOT_DIR, ".webpack");
-const ROOT_DIR = path.join(FLOW_ROOT_DIR, "../");
-
-interface Paths {
-  ASSETS: string;
-  VITE_WEBUI: string;
-  PRELOAD: string;
-  LOCAL_EXTENSIONS: string;
-}
-
-const PATHS: Paths = {
-  ASSETS: app.isPackaged
-    ? path.resolve(process.resourcesPath as string, "assets")
-    : path.resolve(FLOW_ROOT_DIR, "assets"),
-  VITE_WEBUI: app.isPackaged ? path.resolve(process.resourcesPath as string) : path.resolve(ROOT_DIR, "vite"),
-  PRELOAD: path.join(WEBPACK_ROOT_DIR, "renderer", "browser", "preload.js"),
-  LOCAL_EXTENSIONS: path.join(ROOT_DIR, "extensions")
-};
+import { registerProtocolsWithSession } from "./protocols";
+import { FLOW_DATA_DIR, PATHS } from "../modules/paths";
+import { debugError, debugPrint } from "../modules/output";
 
 let webuiExtensionId: string | undefined;
 
@@ -134,7 +105,7 @@ class TabbedBrowserWindow {
 
   async loadWebUI(): Promise<void> {
     if (webuiExtensionId) {
-      console.log("Loading WebUI from extension");
+      debugPrint("VITE_UI_EXTENSION", "Loading WebUI from extension");
 
       // const webuiUrl = "flow-utility://page/error?url=http://abc.com&initial=1";
       // const webuiUrl = `chrome-extension://${webuiExtensionId}/error/index.html?url=http://abc.com&initial=1`;
@@ -149,7 +120,7 @@ class TabbedBrowserWindow {
         { cssOrigin: "user" }
       );
     } else {
-      console.error("WebUI extension ID not available");
+      debugError("VITE_UI_EXTENSION", "WebUI extension ID not available");
     }
   }
 
@@ -327,17 +298,17 @@ export class Browser {
 
     // Load the Vite WebUI extension first
     try {
-      const viteWebUIPath = path.join(PATHS.VITE_WEBUI, "dist");
+      const viteWebUIPath = PATHS.VITE_WEBUI;
       if (fs.existsSync(viteWebUIPath) && fs.existsSync(path.join(viteWebUIPath, "manifest.json"))) {
-        console.log("Loading Vite WebUI extension from:", viteWebUIPath);
+        debugPrint("VITE_UI_EXTENSION", "Loading Vite WebUI extension from:", viteWebUIPath);
         const viteExtension = await this.session.loadExtension(viteWebUIPath);
         webuiExtensionId = viteExtension.id;
-        console.log("Vite WebUI extension loaded with ID:", webuiExtensionId);
+        debugPrint("VITE_UI_EXTENSION", "Vite WebUI extension loaded with ID:", webuiExtensionId);
       } else {
         throw new Error("Vite WebUI extension not found");
       }
     } catch (error) {
-      console.error("Error loading Vite WebUI extension:", error);
+      debugError("VITE_UI_EXTENSION", "Error loading Vite WebUI extension:", error);
     }
 
     // Wait for web store extensions to finish loading as they may change the
@@ -378,11 +349,11 @@ export class Browser {
       this.session.getAllExtensions().map(async (extension) => {
         const manifest = extension.manifest;
         if (manifest.manifest_version === 3 && manifest?.background?.service_worker) {
-          console.log("[LAUNCHER] Starting service worker for scope", extension.url);
+          debugPrint("EXTENSION_SERVER_WORKERS", "Starting service worker for scope", extension.url);
           await this.session.serviceWorkers.startWorkerForScope(extension.url).catch((error) => {
-            console.error("[LAUNCHER] Error starting service worker for scope", extension.url, error);
+            debugError("EXTENSION_SERVER_WORKERS", "Error starting service worker for scope", extension.url, error);
           });
-          console.log("[LAUNCHER] Service worker started for scope", extension.url);
+          debugPrint("EXTENSION_SERVER_WORKERS", "Service worker started for scope", extension.url);
         }
       })
     );
@@ -392,12 +363,16 @@ export class Browser {
   }
 
   initSession(): void {
-    this.session = session.defaultSession;
+    // this.session = session.defaultSession;
+
+    const profileName = "main";
+    const sessionPath = path.join(FLOW_DATA_DIR, "Profiles", profileName);
+    this.session = session.fromPath(sessionPath);
+
+    registerProtocolsWithSession(this.session);
 
     this.session.setPermissionRequestHandler((webContents, permission, callback, details) => {
-      if (FLAGS.SHOW_DEBUG_PRINTS) {
-        console.log("permission request", webContents?.getURL(), permission);
-      }
+      debugPrint("PERMISSIONS", "permission request", webContents?.getURL() || "unknown-url", permission);
 
       if (permission === "openExternal") {
         const openExternalDetails = details as OpenExternalPermissionRequest;
@@ -428,9 +403,7 @@ export class Browser {
     });
 
     this.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
-      if (FLAGS.SHOW_DEBUG_PRINTS) {
-        console.log("permission check", webContents?.getURL(), permission);
-      }
+      debugPrint("PERMISSIONS", "permission check", webContents?.getURL() || "unknown-url", permission);
       return true;
     });
 
@@ -444,7 +417,7 @@ export class Browser {
     }
 
     this.session.serviceWorkers.on("running-status-changed", (event) => {
-      console.info(`service worker ${event.versionId} ${event.runningStatus}`);
+      debugPrint("EXTENSION_SERVER_WORKERS", `service worker ${event.versionId} ${event.runningStatus}`);
     });
 
     if (process.env.FLOW_DEBUG) {
@@ -460,6 +433,7 @@ export class Browser {
   createWindow(options: Partial<TabbedBrowserWindowOptions> = {}): TabbedBrowserWindow {
     const win = new TabbedBrowserWindow({
       ...options,
+      session: this.session,
       urls: this.urls,
       extensions: this.extensions,
       window: {
@@ -475,7 +449,8 @@ export class Browser {
         webPreferences: {
           sandbox: true,
           nodeIntegration: false,
-          contextIsolation: true
+          contextIsolation: true,
+          session: this.session
         },
         frame: false,
         transparent: false,
@@ -511,7 +486,7 @@ export class Browser {
   async onWebContentsCreated(_event: Event, webContents: WebContents): Promise<void> {
     const type = webContents.getType();
     const url = webContents.getURL();
-    console.log(`'web-contents-created' event [type:${type}, url:${url}]`);
+    debugPrint("WEB_CONTENTS_CREATED", `'web-contents-created' event [type:${type}, url:${url || "unknown-url"}]`);
 
     if (process.env.FLOW_DEBUG && ["backgroundPage", "remote"].includes(webContents.getType())) {
       webContents.openDevTools({ mode: "detach", activate: true });
@@ -563,76 +538,6 @@ export class Browser {
     });
   }
 }
-
-app.whenReady().then(() => {
-  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error"];
-
-  protocol.handle("flow-utility", async (request) => {
-    const urlString = request.url;
-
-    // Extract the entire path correctly from custom protocol URL
-    // For flow-utility://error/index.html, we need "error/index.html"
-    const fullPath = urlString.substring(urlString.indexOf("://") + 3);
-    const urlPath = fullPath.split("?")[0]; // Remove query parameters
-    const queryString = fullPath.includes("?") ? fullPath.substring(fullPath.indexOf("?")) : "";
-
-    // Check if this is a page request (starts with /page)
-    if (!urlPath.startsWith("page/")) {
-      return new Response("Invalid request path", { status: 400 });
-    }
-
-    // Remove the /page prefix to get the actual path
-    const pagePath = urlPath.substring(5); // Remove "page/"
-
-    // Redirect index.html to directory path
-    if (pagePath.endsWith("/index.html")) {
-      const redirectPath = `flow-utility://page/${pagePath.replace("/index.html", "/")}${queryString}`;
-      return Response.redirect(redirectPath, 301);
-    }
-
-    // Build file path and check if it exists
-    let filePath = path.join(PATHS.VITE_WEBUI, "dist", pagePath);
-
-    try {
-      // Check if path exists
-      const stats = await fsPromises.stat(filePath);
-
-      // Ensure the requested path is within the allowed directory structure
-      const normalizedPath = path.normalize(filePath);
-      const distDir = path.normalize(path.join(PATHS.VITE_WEBUI, "dist"));
-      if (!normalizedPath.startsWith(distDir)) {
-        return new Response("Access denied", { status: 403 });
-      }
-
-      // If direct file is a directory, try serving index.html from that directory
-      if (stats.isDirectory() && FLOW_UTILITY_ALLOWED_DIRECTORIES.includes(pagePath)) {
-        const indexPath = path.join(filePath, "index.html");
-        try {
-          await fsPromises.access(indexPath);
-          filePath = indexPath;
-        } catch (error) {
-          // Index.html doesn't exist in directory
-          return new Response("Directory index not found", { status: 404 });
-        }
-      }
-
-      // Read file contents
-      const buffer = await fsPromises.readFile(filePath);
-
-      // Determine content type based on file extension
-      const contentType = getContentType(filePath);
-
-      return new Response(buffer, {
-        headers: {
-          "Content-Type": contentType
-        }
-      });
-    } catch (error) {
-      console.error("Error serving file:", error);
-      return new Response("File not found", { status: 404 });
-    }
-  });
-});
 
 // IPC Handlers //
 ipcMain.on("set-window-button-position", (event, position: { x: number; y: number }) => {

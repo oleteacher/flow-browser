@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import { WebContents, BrowserWindow, WebContentsView, ipcMain } from "electron";
 import { FLAGS } from "../modules/flags";
+import { cacheFavicon } from "../modules/favicons";
 
 type PageBounds = {
   x: number;
@@ -29,22 +30,33 @@ class Tab {
   ) {
     this.invalidateLayout = this.invalidateLayout.bind(this);
 
+    const session = parentWindow.webContents.session;
     if (webContentsViewOptions.webContents) {
       // If webContents is provided, use it
       this.view = new WebContentsView({
         webContents: webContentsViewOptions.webContents,
         webPreferences: {
-          ...(webContentsViewOptions.webPreferences || {})
+          ...(webContentsViewOptions.webPreferences || {}),
+          session
         }
       });
     } else {
       // Otherwise create a new WebContentsView without specifying webContents
       this.view = new WebContentsView({
         webPreferences: {
-          ...(webContentsViewOptions.webPreferences || {})
+          ...(webContentsViewOptions.webPreferences || {}),
+          session
         }
       });
     }
+
+    this.view.webContents.on("page-favicon-updated", (_event, favicons) => {
+      const faviconURL = favicons[0];
+      const url = this.view.webContents.getURL();
+      if (faviconURL && url) {
+        cacheFavicon(url, faviconURL);
+      }
+    });
 
     this.id = this.view.webContents.id;
     this.destroyOnNoTabs = destroyOnNoTabs;
@@ -214,7 +226,7 @@ export class Tabs extends EventEmitter {
     return this.tabList.find((tab) => tab.id === tabId);
   }
 
-  create(webContentsViewOptions: Electron.WebContentsViewConstructorOptions = {}) {
+  create(webContentsViewOptions: Electron.WebContentsViewConstructorOptions = {}, shouldShow: boolean = true) {
     if (!this.window) {
       throw new Error("Tabs.create: window is not set");
     }
@@ -222,9 +234,16 @@ export class Tabs extends EventEmitter {
     const tab = new Tab(this.window, webContentsViewOptions);
     this.tabList.push(tab);
     if (!this.selected) this.selected = tab;
-    tab.show(); // must be attached to window
+
+    if (shouldShow) {
+      tab.show(); // must be attached to window
+    }
+
     this.emit("tab-created", tab);
-    this.select(tab.id);
+
+    if (shouldShow) {
+      this.select(tab.id);
+    }
     return tab;
   }
 
