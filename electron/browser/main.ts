@@ -1,4 +1,13 @@
-import { app, session, BrowserWindow, dialog, WebContents, ipcMain, OpenExternalPermissionRequest } from "electron";
+import {
+  app,
+  session,
+  BrowserWindow,
+  dialog,
+  WebContents,
+  ipcMain,
+  OpenExternalPermissionRequest,
+  nativeTheme
+} from "electron";
 import path from "path";
 import fs from "fs";
 import { ElectronChromeExtensions } from "electron-chrome-extensions";
@@ -444,7 +453,8 @@ export class Browser {
         titleBarStyle: "hidden",
         titleBarOverlay: {
           height: 30,
-          color: "#39375b"
+          symbolColor: nativeTheme.shouldUseDarkColors ? "white" : "black",
+          color: "rgba(0,0,0,0)"
         },
         webPreferences: {
           sandbox: true,
@@ -458,7 +468,7 @@ export class Browser {
         backgroundColor: "#00000000",
         visualEffectState: "followWindow",
         vibrancy: "fullscreen-ui", // on MacOS
-        backgroundMaterial: "acrylic", // on Windows
+        // backgroundMaterial: "acrylic", // on Windows (Disabled as it interferes with rounded corners)
         roundedCorners: true
       }
     });
