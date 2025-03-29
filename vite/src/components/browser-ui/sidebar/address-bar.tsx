@@ -7,7 +7,6 @@ import { useRef } from "react";
 
 function FakeAddressBar() {
   const { addressUrl } = useBrowser();
-  const { open } = useSidebar();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,14 +30,12 @@ function FakeAddressBar() {
     );
   };
 
-  if (!open) return null;
-
   return (
     <Input
       ref={inputRef}
       placeholder="Search or type URL"
       value={simplifyUrl(addressUrl)}
-      className="select-none rounded-xl"
+      className="rounded-xl"
       readOnly
       onClick={handleClick}
     />
@@ -46,6 +43,9 @@ function FakeAddressBar() {
 }
 
 export function SidebarAddressBar() {
+  const { open } = useSidebar();
+  if (!open) return null;
+
   return (
     <SidebarGroup className="pt-0">
       <FakeAddressBar />
