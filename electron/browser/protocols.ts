@@ -1,12 +1,12 @@
 import path from "path";
-import { Protocol, Session } from "electron";
-import { PATHS } from "../modules/paths";
+import { app, Protocol, session, Session } from "electron";
+import { PATHS } from "@/modules/paths";
 import fsPromises from "fs/promises";
-import { getContentType } from "../modules/utils";
-import { getFavicon, normalizeURL } from "../modules/favicons";
+import { getContentType } from "@/modules/utils";
+import { getFavicon, normalizeURL } from "@/modules/favicons";
 
 function registerFlowUtilityProtocol(protocol: Protocol) {
-  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error"];
+  const FLOW_UTILITY_ALLOWED_DIRECTORIES = ["error", "settings"];
 
   const handlePageRequest = async (request: Request, url: URL) => {
     const queryString = url.search;
@@ -88,6 +88,38 @@ function registerFlowUtilityProtocol(protocol: Protocol) {
     });
   };
 
+  const handleAssetRequest = async (request: Request, url: URL) => {
+    const assetPath = url.pathname;
+
+    // Normalize the path to prevent directory traversal attacks
+    const normalizedPath = path.normalize(assetPath).replace(/^(\.\.(\/|\\|$))+/, "");
+
+    const filePath = path.join(PATHS.ASSETS, "public", normalizedPath);
+
+    // Ensure the requested path is within the allowed directory
+    const assetsDir = path.normalize(path.join(PATHS.ASSETS, "public"));
+    if (!path.normalize(filePath).startsWith(assetsDir)) {
+      return new Response("Access denied", { status: 403 });
+    }
+
+    try {
+      // Read file contents
+      const buffer = await fsPromises.readFile(filePath);
+
+      // Determine content type based on file extension
+      const contentType = getContentType(filePath);
+
+      return new Response(buffer, {
+        headers: {
+          "Content-Type": contentType
+        }
+      });
+    } catch (error) {
+      console.error("Error serving asset:", error);
+      return new Response("Asset not found", { status: 404 });
+    }
+  };
+
   protocol.handle("flow-utility", async (request) => {
     const urlString = request.url;
 
@@ -103,6 +135,11 @@ function registerFlowUtilityProtocol(protocol: Protocol) {
       return await handleFaviconRequest(request, url);
     }
 
+    // flow-utility://asset/:path
+    if (url.host === "asset") {
+      return await handleAssetRequest(request, url);
+    }
+
     return new Response("Invalid request path", { status: 400 });
   });
 }
@@ -111,3 +148,8 @@ export function registerProtocolsWithSession(session: Session) {
   const protocol = session.protocol;
   registerFlowUtilityProtocol(protocol);
 }
+
+app.whenReady().then(() => {
+  const defaultSession = session.defaultSession;
+  registerProtocolsWithSession(defaultSession);
+});

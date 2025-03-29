@@ -19,7 +19,16 @@ export type TabNavigationStatus = {
   canGoForward: boolean;
 };
 
+export type IconData = {
+  id: string;
+  name: string;
+  image_id: string;
+  author?: string;
+};
+
 type QueryParams = { [key: string]: string };
+
+export type NewTabMode = "omnibox" | "tab";
 
 /**
  * Interface for the Flow API exposed by the Electron preload script
@@ -92,6 +101,25 @@ interface FlowOmniboxAPI {
   hide: () => void;
 }
 
+interface FlowSettingsAPI {
+  open: () => void;
+  close: () => void;
+  getAppInfo: () => Promise<{
+    app_version: string;
+    build_number: string;
+    node_version: string;
+    chrome_version: string;
+    electron_version: string;
+    os: string;
+    update_channel: "Stable" | "Beta" | "Alpha" | "Development";
+  }>;
+  getIcons: () => Promise<IconData[]>;
+  getCurrentIcon: () => Promise<string>;
+  setCurrentIcon: (iconId: string) => Promise<boolean>;
+  getCurrentNewTabMode: () => Promise<NewTabMode>;
+  setCurrentNewTabMode: (newTabMode: NewTabMode) => Promise<boolean>;
+}
+
 declare global {
   /**
    * The Flow API instance exposed by the Electron preload script
@@ -100,6 +128,7 @@ declare global {
   const flow: {
     interface: FlowInterfaceAPI;
     omnibox: FlowOmniboxAPI;
+    settings: FlowSettingsAPI;
   };
 }
 
@@ -143,4 +172,33 @@ export function showOmnibox(bounds: PageBounds | null, params: QueryParams | nul
 
 export function hideOmnibox() {
   return flow.omnibox.hide();
+}
+
+// Settings API //
+export function getAppInfo() {
+  return flow.settings.getAppInfo();
+}
+
+export function getIcons() {
+  return flow.settings.getIcons();
+}
+
+export function getCurrentIcon() {
+  return flow.settings.getCurrentIcon();
+}
+
+export function setCurrentIcon(iconId: string) {
+  return flow.settings.setCurrentIcon(iconId);
+}
+
+export function openSettings() {
+  return flow.settings.open();
+}
+
+export function getCurrentNewTabMode() {
+  return flow.settings.getCurrentNewTabMode();
+}
+
+export function setCurrentNewTabMode(newTabMode: NewTabMode) {
+  return flow.settings.setCurrentNewTabMode(newTabMode);
 }

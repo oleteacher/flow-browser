@@ -1,36 +1,22 @@
-import {
-  app,
-  session,
-  BrowserWindow,
-  dialog,
-  WebContents,
-  ipcMain,
-  OpenExternalPermissionRequest,
-  nativeTheme
-} from "electron";
+import { app, session, BrowserWindow, dialog, WebContents, OpenExternalPermissionRequest, nativeTheme } from "electron";
 import path from "path";
 import fs from "fs";
 import { ElectronChromeExtensions } from "electron-chrome-extensions";
 import { buildChromeContextMenu } from "electron-chrome-context-menu";
 import { installChromeWebStore, loadAllExtensions } from "electron-chrome-web-store";
-
-// Import local modules
-import { Tabs } from "./tabs";
+import { TabbedBrowserWindow, TabbedBrowserWindowOptions } from "./tabbed-browser-window";
 import { setupMenu } from "./menu";
-import { FLAGS } from "../modules/flags";
-import { Omnibox } from "./omnibox";
+import { FLAGS } from "@/modules/flags";
 import { registerProtocolsWithSession } from "./protocols";
-import { FLOW_DATA_DIR, PATHS } from "../modules/paths";
-import { debugError, debugPrint } from "../modules/output";
+import { FLOW_DATA_DIR, PATHS } from "@/modules/paths";
+import { debugError, debugPrint } from "@/modules/output";
+import { generateBrowserWindowData, windowEvents, WindowEventType } from "@/modules/windows";
+import { setWebuiExtensionId } from "./utils";
+import { MinimalEvent } from "@/modules/types";
+import "@/browser/ipc";
 
-let webuiExtensionId: string | undefined;
-
-interface TabbedBrowserWindowOptions {
-  session?: Electron.Session;
-  extensions: ElectronChromeExtensions;
-  window: Electron.BrowserWindowConstructorOptions;
-  urls: { newtab: string };
-  initialUrl?: string;
+interface BrowserUrls {
+  newtab: string;
 }
 
 interface Sender extends Electron.WebContents {
@@ -51,107 +37,6 @@ function getParentWindowOfTab(tab: WebContents): BrowserWindow {
     default:
       throw new Error(`Unable to find parent window of '${tab.getType()}'`);
   }
-}
-
-class TabbedBrowserWindow {
-  private session: Electron.Session;
-  private extensions: ElectronChromeExtensions;
-  private window: BrowserWindow;
-  tabs: Tabs;
-  omnibox: Omnibox;
-  public id: number;
-  public webContents: WebContents;
-
-  constructor(options: TabbedBrowserWindowOptions) {
-    this.session = options.session || session.defaultSession;
-    this.extensions = options.extensions;
-
-    // Can't inherit BrowserWindow
-    // https://github.com/electron/electron/issues/23#issuecomment-19613241
-    this.window = new BrowserWindow(options.window);
-    this.id = this.window.id;
-    this.webContents = this.window.webContents;
-
-    // Load the WebUI extension
-    this.loadWebUI();
-
-    this.tabs = new Tabs(this.window);
-
-    const self = this;
-
-    this.tabs.on("tab-created", function onTabCreated(tab) {
-      tab.loadURL(options.urls.newtab);
-
-      // Track tab that may have been created outside of the extensions API.
-      self.extensions.addTab(tab.webContents, tab.window);
-    });
-
-    this.tabs.on("tab-destroyed", function onTabDestroyed(tab) {
-      // Track tab that may have been destroyed outside of the extensions API.
-      self.extensions.removeTab(tab.webContents);
-    });
-
-    this.tabs.on("tab-selected", function onTabSelected(tab) {
-      self.extensions.selectTab(tab.webContents);
-    });
-
-    if (webuiExtensionId) {
-      this.omnibox = new Omnibox(this.window, webuiExtensionId);
-    }
-
-    queueMicrotask(() => {
-      // If you do not create a tab, ElectronChromeExtensions will not register the new window.
-      // This is such a weird behavior, but oh well.
-
-      // Create initial tab
-      const tab = this.tabs.create();
-
-      if (options.initialUrl) {
-        tab.loadURL(options.initialUrl);
-      }
-    });
-  }
-
-  async loadWebUI(): Promise<void> {
-    if (webuiExtensionId) {
-      debugPrint("VITE_UI_EXTENSION", "Loading WebUI from extension");
-
-      // const webuiUrl = "flow-utility://page/error?url=http://abc.com&initial=1";
-      // const webuiUrl = `chrome-extension://${webuiExtensionId}/error/index.html?url=http://abc.com&initial=1`;
-      const webuiUrl = `chrome-extension://${webuiExtensionId}/main/index.html`;
-      await this.webContents.loadURL(webuiUrl);
-      await this.webContents.insertCSS(
-        `:root, html, body {
-  background: unset !important;
-  background-color: unset !important;
-  color: unset !important;
-}`,
-        { cssOrigin: "user" }
-      );
-    } else {
-      debugError("VITE_UI_EXTENSION", "WebUI extension ID not available");
-    }
-  }
-
-  getBrowserWindow(): BrowserWindow {
-    return this.window;
-  }
-
-  destroy(): void {
-    this.tabs.destroy();
-
-    if (!this.window.isDestroyed()) {
-      this.window.destroy();
-    }
-  }
-
-  getFocusedTab() {
-    return this.tabs.selected;
-  }
-}
-
-interface BrowserUrls {
-  newtab: string;
 }
 
 export class Browser {
@@ -191,7 +76,9 @@ export class Browser {
       if (BrowserWindow.getAllWindows().length === 0) this.createInitialWindow();
     });
 
-    app.on("web-contents-created", this.onWebContentsCreated.bind(this));
+    app.on("web-contents-created", (event, webContents) => {
+      this.onWebContentsCreated(event, webContents);
+    });
   }
 
   destroy(): void {
@@ -256,6 +143,13 @@ export class Browser {
         if (details.url) tab.loadURL(details.url);
         if (typeof details.active === "boolean" ? details.active : true) win.tabs.select(tab.id);
 
+        if (!tab.webContents) {
+          throw new Error(`Unable to find webContents for tabId=${tab.id}`);
+        }
+        if (!tab.window) {
+          throw new Error(`Unable to find window for tabId=${tab.id}`);
+        }
+
         return [tab.webContents, tab.window];
       },
       selectTab: (tab, browserWindow: BrowserWindow) => {
@@ -311,12 +205,12 @@ export class Browser {
       if (fs.existsSync(viteWebUIPath) && fs.existsSync(path.join(viteWebUIPath, "manifest.json"))) {
         debugPrint("VITE_UI_EXTENSION", "Loading Vite WebUI extension from:", viteWebUIPath);
         const viteExtension = await this.session.loadExtension(viteWebUIPath);
-        webuiExtensionId = viteExtension.id;
-        debugPrint("VITE_UI_EXTENSION", "Vite WebUI extension loaded with ID:", webuiExtensionId);
+        setWebuiExtensionId(viteExtension.id);
+        debugPrint("VITE_UI_EXTENSION", "Vite WebUI extension loaded with ID:", viteExtension.id);
       } else {
         throw new Error("Vite WebUI extension not found");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       debugError("VITE_UI_EXTENSION", "Error loading Vite WebUI extension:", error);
     }
 
@@ -325,7 +219,9 @@ export class Browser {
     await installChromeWebStore({
       session: this.session,
       async beforeInstall(details) {
-        if (!details.browserWindow || details.browserWindow.isDestroyed()) return;
+        if (!details.browserWindow || details.browserWindow.isDestroyed()) {
+          return { action: "deny" };
+        }
 
         const title = `Add "${details.localizedName}"?`;
 
@@ -387,7 +283,7 @@ export class Browser {
         const openExternalDetails = details as OpenExternalPermissionRequest;
 
         const externalAppName =
-          app.getApplicationNameForProtocol(openExternalDetails.externalURL) || "an unknown application";
+          app.getApplicationNameForProtocol(openExternalDetails.externalURL ?? "") || "an unknown application";
 
         const url = new URL(openExternalDetails.requestingUrl);
         const minifiedUrl = `${url.protocol}//${url.host}`;
@@ -433,7 +329,7 @@ export class Browser {
       this.session.serviceWorkers.once("running-status-changed", () => {
         const tab = this.windows[0]?.getFocusedTab();
         if (tab) {
-          tab.webContents.inspectServiceWorker();
+          tab.webContents?.inspectServiceWorker();
         }
       });
     }
@@ -474,12 +370,15 @@ export class Browser {
     });
 
     this.windows.push(win);
-    win.getBrowserWindow().on("close", () => {
-      this.windows = this.windows.filter((w) => w.id !== win.id);
-      win.destroy();
-    });
+
+    // Emit window added event
+    windowEvents.emit(WindowEventType.ADDED, generateBrowserWindowData(win));
+
     win.getBrowserWindow().on("closed", () => {
       this.windows = this.windows.filter((w) => w.id !== win.id);
+
+      // Emit window removed event
+      windowEvents.emit(WindowEventType.REMOVED, generateBrowserWindowData(win));
     });
 
     if (process.env.FLOW_DEBUG) {
@@ -493,10 +392,14 @@ export class Browser {
     this.createWindow();
   }
 
-  async onWebContentsCreated(_event: Event, webContents: WebContents): Promise<void> {
+  async onWebContentsCreated(_event: MinimalEvent, webContents: WebContents): Promise<void> {
     const type = webContents.getType();
     const url = webContents.getURL();
     debugPrint("WEB_CONTENTS_CREATED", `'web-contents-created' event [type:${type}, url:${url || "unknown-url"}]`);
+
+    if (webContents.session == session.defaultSession) {
+      return;
+    }
 
     if (process.env.FLOW_DEBUG && ["backgroundPage", "remote"].includes(webContents.getType())) {
       webContents.openDevTools({ mode: "detach", activate: true });
@@ -515,6 +418,11 @@ export class Browser {
               if (!win) throw new Error("Unable to find window for web contents");
               const tab = win.tabs.create(constructionOptions);
               tab.loadURL(details.url);
+
+              if (!tab.webContents) {
+                throw new Error(`Unable to find webContents for tabId=${tab.id}`);
+              }
+
               return tab.webContents;
             }
           };
@@ -548,18 +456,3 @@ export class Browser {
     });
   }
 }
-
-// IPC Handlers //
-ipcMain.on("set-window-button-position", (event, position: { x: number; y: number }) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (win && "setWindowButtonPosition" in win) {
-    win.setWindowButtonPosition(position);
-  }
-});
-
-ipcMain.on("set-window-button-visibility", (event, visible: boolean) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (win && "setWindowButtonVisibility" in win) {
-    win.setWindowButtonVisibility(visible);
-  }
-});
