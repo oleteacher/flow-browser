@@ -16,13 +16,15 @@ Flow Browser is a lightweight, feature-rich web browser that combines the power 
 ## Install (v0.3.2)
 
 > [!WARNING]
+>
 > macOS's version is not currently code-signed!
-> 
+>
 > If you just download it from your browser, it will be blocked by [Gatekeeper](https://disable-gatekeeper.github.io/), which says 'This application is damaged' and will not let you open it.
 
 ### macOS:
 
 ```bash
+# Run this command in your terminal
 curl -LO https://github.com/MultiboxLabs/flow-browser/releases/download/v0.3.2/FlowInstaller.dmg
 ```
 
@@ -44,57 +46,13 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 ## Features
 
 - **Modern UI**: Clean, intuitive interface built with React 19 and Tailwind CSS
-- **Tab Management**: Efficient browsing with multi-tab support
-- **Chrome Extension Support**: Install and use extensions from the Chrome Web Store
-- **Extension API Support**: Compatible with most Chrome extension APIs
-- **Manifest V3 Support**: Ready for the latest extension standards
+- **Extension Support**: Compatible with most Chrome extensions from the Chrome Web Store
+- **Better New Tab**: Shows a popup omnibox which lets you search the web or quickly open a new tab, bookmark, or history.
+- **Wide Customization**: Custom icons, new page mode, and more.
 
-## Monorepo Parts
+## Contributing
 
-| Name         | Description                                        |
-| ------------ | -------------------------------------------------- |
-| **electron** | The main browser application with tabbed interface |
-| **vite**     | Frontend for the browser                           |
-
-## Getting Started
-
-```bash
-# Clone the repository
-git clone https://github.com/MultiboxLabs/flow-browser.git
-cd flow-browser
-
-# Install dependencies and launch the browser
-bun install
-bun start
-```
-
-## Using Extensions
-
-### From Chrome Web Store
-
-1. Navigate to the [Chrome Web Store](https://chromewebstore.google.com/)
-2. Browse and install extensions directly from the store
-
-### Local Extensions
-
-Refer to the [Local Extensions](./extensions/README.md) documentation for more information.
-
-## Development
-
-```bash
-# Build all packages
-bun build
-
-# Start
-bun start
-```
-
-## Technology Stack
-
-- **Frontend**: React 19, Tailwind CSS, Framer Motion
-- **Routing**: TanStack Router
-- **Build Tools**: Vite, TypeScript, Bun
-- **Runtime**: Electron 35 (Chromium)
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for more information.
 
 ## License
 
