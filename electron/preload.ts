@@ -1,3 +1,4 @@
+import { ProfileData } from "@/modules/profiles";
 import { NewTabMode } from "@/saving/settings";
 import { contextBridge, ipcRenderer } from "electron";
 import { injectBrowserAction } from "electron-chrome-extensions/browser-action";
@@ -142,6 +143,24 @@ contextBridge.exposeInMainWorld("flow", {
     setCurrentNewTabMode: async (newTabMode: NewTabMode) => {
       if (!canUseSettingsAPI) return;
       return ipcRenderer.invoke("set-current-new-tab-mode", newTabMode);
+    },
+
+    // Settings: Profiles //
+    getProfiles: async () => {
+      if (!canUseSettingsAPI) return;
+      return ipcRenderer.invoke("profiles:get-all");
+    },
+    createProfile: async (profileName: string) => {
+      if (!canUseSettingsAPI) return;
+      return ipcRenderer.invoke("profiles:create", profileName);
+    },
+    updateProfile: async (profileId: string, profileData: Partial<ProfileData>) => {
+      if (!canUseSettingsAPI) return;
+      return ipcRenderer.invoke("profiles:update", profileId, profileData);
+    },
+    deleteProfile: async (profileId: string) => {
+      if (!canUseSettingsAPI) return;
+      return ipcRenderer.invoke("profiles:delete", profileId);
     }
   }
 });

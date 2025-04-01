@@ -10,8 +10,13 @@ type Data = {
   [key: string]: any;
 };
 
+export type DataStoreData = Data;
+
 type AccessResult = Data | null;
 
+/**
+ * Error class specifically for DataStore related errors
+ */
 class DataStoreError extends Error {
   constructor(
     message: string,
@@ -22,17 +27,47 @@ class DataStoreError extends Error {
   }
 }
 
-export class DataStore {
+/**
+ * Handles persistent storage of JSON data in the filesystem
+ * Each DataStore instance manages a single namespace (file)
+ */
+class DataStore {
+  private directoryPath: string;
   private accessQueue: Queue;
 
-  constructor(private readonly namespace: string) {
+  /**
+   * Creates a new DataStore instance
+   * @param namespace - The unique identifier for this datastore (becomes filename)
+   * @param containers - Optional subdirectories to organize datastores
+   * @throws {DataStoreError} If invalid parameters are provided
+   */
+  constructor(
+    private readonly namespace: string,
+    private readonly containers?: string[]
+  ) {
     if (!namespace || typeof namespace !== "string") {
       throw new DataStoreError("Invalid namespace provided to DataStore constructor");
+    }
+
+    if (containers && !Array.isArray(containers)) {
+      throw new DataStoreError("Invalid containers provided to DataStore constructor");
+    }
+
+    if (this.containers) {
+      this.directoryPath = path.join(DATASTORE_DIR, ...this.containers);
+    } else {
+      this.directoryPath = DATASTORE_DIR;
     }
 
     this.accessQueue = new Queue();
   }
 
+  /**
+   * Core method to handle file I/O operations with proper queuing
+   * @param callback - Function that receives current data and returns new data to save
+   * @returns Promise resolving to the callback result
+   * @private
+   */
   private accessDataStore(callback: (oldData: Data) => Promise<AccessResult> | AccessResult): Promise<AccessResult> {
     return this.accessQueue.add(async () => {
       const namespace = this.namespace;
@@ -42,11 +77,11 @@ export class DataStore {
       }
 
       // Create the datastore directory if it doesn't exist
-      await fs.mkdir(DATASTORE_DIR, { recursive: true });
-      debugPrint("DATASTORE", `Ensuring datastore directory exists: ${DATASTORE_DIR}`);
+      await fs.mkdir(this.directoryPath, { recursive: true });
+      debugPrint("DATASTORE", `Ensuring datastore directory exists: ${this.directoryPath}`);
 
       // Get file path
-      const dataFilePath = path.join(DATASTORE_DIR, `${namespace}.json`);
+      const dataFilePath = path.join(this.directoryPath, `${namespace}.json`);
       debugPrint("DATASTORE", `Accessing datastore file: ${dataFilePath}`);
 
       // Read data
@@ -93,6 +128,12 @@ export class DataStore {
     });
   }
 
+  /**
+   * Helper method to get data from the datastore without writing it back
+   * @param callback - Function that receives current data and returns a transformed value
+   * @returns Promise resolving to the callback result
+   * @private
+   */
   private getDataStoreNamespace<T>(callback: (data: Data) => Promise<T> | T): Promise<T> {
     return new Promise((resolve, reject) => {
       const accessCallback = async (data: Data) => {
@@ -109,6 +150,23 @@ export class DataStore {
     });
   }
 
+  /**
+   * Retrieves all data stored in this namespace
+   * @returns Promise resolving to the complete data object
+   */
+  getFullData() {
+    return this.getDataStoreNamespace((data) => {
+      return data;
+    });
+  }
+
+  /**
+   * Gets a single value by key from the datastore
+   * @param key - The key to retrieve
+   * @param defaultValue - Value to return if key doesn't exist
+   * @returns Promise resolving to the value or defaultValue if not found
+   * @throws {DataStoreError} If invalid key is provided
+   */
   get<T>(key: string, defaultValue?: T): Promise<T | undefined> {
     if (!key || typeof key !== "string") {
       throw new DataStoreError("Invalid key provided to get method");
@@ -119,6 +177,30 @@ export class DataStore {
     });
   }
 
+  /**
+   * Gets multiple values by keys from the datastore
+   * @param keys - Array of keys to retrieve
+   * @returns Promise resolving to an object with the requested keys and their values
+   */
+  getKeys<K extends string>(keys: K[]): Promise<{ [key in K]: any }> {
+    return this.getDataStoreNamespace((data) => {
+      return keys.reduce(
+        (acc, key) => {
+          acc[key] = data[key];
+          return acc;
+        },
+        {} as { [key in K]: any }
+      );
+    });
+  }
+
+  /**
+   * Sets a value in the datastore
+   * @param key - The key to set
+   * @param value - The value to store
+   * @returns Promise that resolves when the operation is complete
+   * @throws {DataStoreError} If invalid key is provided
+   */
   async set<T>(key: string, value: T): Promise<void> {
     if (!key || typeof key !== "string") {
       throw new DataStoreError("Invalid key provided to set method");
@@ -129,4 +211,47 @@ export class DataStore {
       return data;
     });
   }
+
+  /**
+   * Deletes the datastore file
+   * @returns Promise resolving to a boolean indicating success
+   */
+  async wipe(): Promise<boolean> {
+    const dataFilePath = path.join(this.directoryPath, `${this.namespace}.json`);
+    return await fs
+      .rm(dataFilePath)
+      .then(() => true)
+      .catch(() => false);
+  }
+}
+
+// Only export the type of the class, not the class itself
+// This makes sure the classes are only created using the singleton
+export type { DataStore };
+
+// Singleton //
+const datastores = new Map<string, DataStore>();
+
+/**
+ * Gets or creates a DataStore instance for the specified namespace
+ * Acts as a singleton factory to ensure only one instance exists per namespace
+ *
+ * @param namespace - The unique identifier for this datastore
+ * @param containers - Optional subdirectories or single subdirectory string
+ * @returns DataStore instance for the requested namespace
+ */
+export function getDatastore(namespace: string, containers?: string[] | string): DataStore {
+  const key = [...(containers || []), namespace].join("/");
+
+  if (datastores.has(key)) {
+    return datastores.get(key) as DataStore;
+  }
+
+  if (typeof containers === "string") {
+    containers = [containers];
+  }
+
+  const datastore = new DataStore(namespace, containers);
+  datastores.set(key, datastore);
+  return datastore;
 }

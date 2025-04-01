@@ -26,6 +26,11 @@ export type IconData = {
   author?: string;
 };
 
+export type Profile = {
+  id: string;
+  name: string;
+};
+
 type QueryParams = { [key: string]: string };
 
 export type NewTabMode = "omnibox" | "tab";
@@ -119,6 +124,10 @@ interface FlowSettingsAPI {
   setCurrentIcon: (iconId: string) => Promise<boolean>;
   getCurrentNewTabMode: () => Promise<NewTabMode>;
   setCurrentNewTabMode: (newTabMode: NewTabMode) => Promise<boolean>;
+  getProfiles: () => Promise<Profile[]>;
+  createProfile: (profileName: string) => Promise<boolean>;
+  updateProfile: (profileId: string, profileData: Partial<Profile>) => Promise<boolean>;
+  deleteProfile: (profileId: string) => Promise<boolean>;
 }
 
 declare global {
@@ -206,4 +215,20 @@ export function getCurrentNewTabMode() {
 
 export function setCurrentNewTabMode(newTabMode: NewTabMode) {
   return flow.settings.setCurrentNewTabMode(newTabMode);
+}
+
+export function getProfiles() {
+  return flow.settings.getProfiles();
+}
+
+export function createProfile(profileName: string) {
+  return flow.settings.createProfile(profileName);
+}
+
+export function updateProfile(profileId: string, profileData: Partial<Profile>) {
+  return flow.settings.updateProfile(profileId, profileData);
+}
+
+export function deleteProfile(profileId: string) {
+  return flow.settings.deleteProfile(profileId);
 }
