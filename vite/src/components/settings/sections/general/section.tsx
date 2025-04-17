@@ -1,4 +1,6 @@
+import { ResetOnboardingCard } from "@/components/settings/sections/general/reset-onboarding-card";
 import { NewTabModeCard } from "./new-tab-mode-card";
+import { SidebarCollapseModeCard } from "@/components/settings/sections/general/sidebar-collapse-mode-card";
 
 export function GeneralSettings() {
   return (
@@ -9,6 +11,8 @@ export function GeneralSettings() {
       </div>
 
       <NewTabModeCard />
+      <SidebarCollapseModeCard />
+      <ResetOnboardingCard />
     </div>
   );
 }

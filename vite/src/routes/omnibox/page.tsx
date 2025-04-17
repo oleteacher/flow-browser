@@ -1,15 +1,15 @@
-import { Omnibox } from "@/components/omnibox/main";
-import { BrowserProvider } from "@/components/main/browser-context";
+import { OmniboxMain } from "@/components/omnibox/main";
+import { ThemeProvider } from "@/components/main/theme";
 
-function OmniboxApp() {
-  return <Omnibox />;
+function Page() {
+  return <OmniboxMain />;
 }
 
 function App() {
   return (
-    <BrowserProvider>
-      <OmniboxApp />
-    </BrowserProvider>
+    <ThemeProvider>
+      <Page />
+    </ThemeProvider>
   );
 }
 

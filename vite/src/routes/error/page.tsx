@@ -1,8 +1,9 @@
-import { FrownIcon, RefreshCwIcon, ArrowLeftIcon } from "lucide-react";
+import { ThemeProvider } from "@/components/main/theme";
+import { FrownIcon, RefreshCwIcon, ArrowLeftIcon, Gamepad2Icon } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect } from "react";
 
-function App() {
+function Page() {
   const params = new URLSearchParams(window.location.search);
   const errorCode = params.get("errorCode") || "-105";
   const url = params.get("url");
@@ -76,6 +77,10 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  if (!url) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 flex flex-col items-center pt-24 px-4 transition-colors duration-300">
       <title>{url || "Error"}</title>
@@ -128,8 +133,30 @@ function App() {
             Reload
           </motion.button>
         </div>
+
+        {/* Games section */}
+        <div className="mt-8 flex flex-col items-center">
+          <p className="text-gray-600 dark:text-zinc-400 mb-3">Want to play some games?</p>
+          <motion.button
+            onClick={() => window.open("flow://games", "_blank")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors duration-200 shadow-md"
+          >
+            <Gamepad2Icon className="w-4 h-4" />
+            Game Library
+          </motion.button>
+        </div>
       </motion.div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Page />
+    </ThemeProvider>
   );
 }
 

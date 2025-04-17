@@ -1,42 +1,46 @@
 import BrowserContent from "@/components/browser-ui/browser-content";
-import { BrowserSidebar } from "@/components/browser-ui/browser-sidebar";
-import { useBrowser } from "@/components/main/browser-context";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/resizable-sidebar";
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import { BrowserSidebar } from "@/components/browser-ui/browser-sidebar";
+import { SpacesProvider } from "@/components/providers/spaces-provider";
+import { useEffect, useMemo } from "react";
+import { useState } from "react";
+import { TabsProvider, useTabs } from "@/components/providers/tabs-provider";
+import { SettingsProvider, useSettings } from "@/components/providers/settings-provider";
+import { TabDisabler } from "@/components/logic/tab-disabler";
 
 export type CollapseMode = "icon" | "offcanvas";
 export type SidebarVariant = "sidebar" | "floating";
 export type SidebarSide = "left" | "right";
 
 function InternalBrowserUI() {
-  const { dynamicTitle, activeTab } = useBrowser();
-  const [isActiveTabLoading, setIsActiveTabLoading] = useState(false);
-
-  const [collapseMode] = useState<CollapseMode>("icon");
-  const [variant] = useState<SidebarVariant>("sidebar");
-  const [side] = useState<SidebarSide>("left");
-
   const { open } = useSidebar();
+  const { sidebarCollapseMode } = useSettings();
+  const { focusedTab } = useTabs();
 
-  useEffect(() => {
-    if (activeTab && activeTab.status === "loading") {
-      setIsActiveTabLoading(true);
-    } else {
-      setIsActiveTabLoading(false);
-    }
-  }, [activeTab]);
+  const dynamicTitle: string | null = useMemo(() => {
+    if (!focusedTab) return null;
+
+    return focusedTab.title;
+  }, [focusedTab]);
+
+  const isActiveTabLoading = focusedTab?.isLoading || false;
+
+  // Only show the browser content if the focused tab is in full screen mode
+  if (focusedTab?.fullScreen) {
+    return <BrowserContent />;
+  }
 
   return (
     <>
       {dynamicTitle && <title>{`${dynamicTitle} | Flow`}</title>}
-      <BrowserSidebar collapseMode={collapseMode} variant={variant} side={side} />
-      <SidebarInset>
+      <BrowserSidebar collapseMode={sidebarCollapseMode} variant="sidebar" side="left" />
+      <SidebarInset className="bg-transparent">
         <div
           className={cn(
-            "bg-sidebar flex-1 flex p-3 platform-win32:pt-[calc(env(titlebar-area-y)+env(titlebar-area-height))] app-drag",
-            open && "pl-0.5"
+            "dark flex-1 flex p-3 platform-win32:pt-[calc(env(titlebar-area-y)+env(titlebar-area-height))] app-drag",
+            open && "pl-1"
           )}
         >
           {/* Topbar */}
@@ -76,9 +80,36 @@ function InternalBrowserUI() {
 }
 
 export function BrowserUI() {
+  const [isReady, setIsReady] = useState(false);
+
+  // No transition on first load
+  useEffect(() => {
+    setTimeout(() => {
+      setIsReady(true);
+
+      // Open new tab on first load
+      flow.newTab.open();
+    }, 100);
+  }, []);
+
   return (
-    <SidebarProvider>
-      <InternalBrowserUI />
-    </SidebarProvider>
+    <div
+      className={cn(
+        "w-screen h-screen",
+        "bg-gradient-to-br from-space-background-start/80 to-space-background-end/80",
+        isReady && "transition-colors duration-300"
+      )}
+    >
+      <TabDisabler />
+      <SidebarProvider>
+        <SettingsProvider>
+          <SpacesProvider>
+            <TabsProvider>
+              <InternalBrowserUI />
+            </TabsProvider>
+          </SpacesProvider>
+        </SettingsProvider>
+      </SidebarProvider>
+    </div>
   );
 }

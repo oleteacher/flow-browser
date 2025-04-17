@@ -1,9 +1,5 @@
 import { createSearchUrl } from "@/lib/search";
 
-const extensionId = chrome.runtime.id;
-const fakeBrowserProtocol = "flow";
-const whitelistedPages = ["new", "omnibox"];
-
 // Real Target Protocol -> Fake Browser Protocol
 const protocolReplacements = {
   "chrome-extension://": "extension://"
@@ -16,15 +12,6 @@ export function getURLFromInput(input: string): string | null {
   // Check if input is empty
   if (!trimmedInput) return null;
 
-  // Check if it looks like a main UI URL (flow://main or flow://new)
-  if (trimmedInput.startsWith(`${fakeBrowserProtocol}://`)) {
-    // return `chrome-extension://<extensionId>/[page]/index.html`
-    const page = trimmedInput.replace(`${fakeBrowserProtocol}://`, "");
-    if (whitelistedPages.includes(page)) {
-      return `chrome-extension://${extensionId}/${page}/index.html`;
-    }
-  }
-
   // Check if its other protocols
   for (const [key, value] of Object.entries(protocolReplacements)) {
     if (trimmedInput.startsWith(value)) {
@@ -36,6 +23,12 @@ export function getURLFromInput(input: string): string | null {
   const protocolRegex = /^[a-zA-Z0-9.+-]+:\/\//;
   if (protocolRegex.test(trimmedInput)) {
     return trimmedInput;
+  }
+
+  // Check if it is parsable
+  const url = URL.parse(input);
+  if (url) {
+    return url.toString();
   }
 
   // Check if it looks like a URL using a more robust regex pattern
@@ -71,29 +64,21 @@ export function parseAddressBarInput(input: string): string {
 }
 
 export function transformUrl(url: string): string | null {
-  // Flow Protocol
-  if (url.startsWith(`chrome-extension://${extensionId}/`)) {
-    const path = url.split("/").slice(3).join("/");
-    // Extract the first part of the path
-    const firstPathSegment = path.split("/")[0];
-    if (firstPathSegment && whitelistedPages.includes(firstPathSegment)) {
-      return `${fakeBrowserProtocol}://${firstPathSegment}`;
+  const urlObject = URL.parse(url);
+
+  // Error Page
+  if (urlObject && urlObject.protocol === "flow:" && urlObject.hostname === "error") {
+    const erroredURL = urlObject.searchParams.get("url");
+    if (erroredURL) {
+      return erroredURL;
+    } else {
+      return "";
     }
   }
 
-  // Error Page
-  try {
-    const urlObject = new URL(url);
-    if (urlObject.protocol === "flow-utility:" && urlObject.host === "page" && urlObject.pathname === "/error") {
-      const erroredURL = urlObject.searchParams.get("url");
-      if (erroredURL) {
-        return erroredURL;
-      } else {
-        return "";
-      }
-    }
-  } catch {
-    // Do nothing
+  // New Tab Page
+  if (urlObject && urlObject.protocol === "flow:" && urlObject.hostname === "new-tab") {
+    return "";
   }
 
   // Other Protocols
@@ -107,24 +92,27 @@ export function transformUrl(url: string): string | null {
 }
 
 export function simplifyUrl(url: string): string {
-  try {
-    const parsedUrl = new URL(url);
-
-    let hostname = parsedUrl.hostname;
-    if (hostname.startsWith("www.")) {
-      hostname = hostname.slice(4);
-    }
-
-    let shortenedURL = hostname;
-
-    const isHttp = ["http:", "https:"].includes(parsedUrl.protocol);
-    if (!isHttp) {
-      shortenedURL = `${parsedUrl.protocol}//${hostname}`;
-    }
-
-    return shortenedURL;
-  } catch {
-    // Not a valid URL, return the original string
+  const parsedUrl = URL.parse(url);
+  if (!parsedUrl) {
     return url;
   }
+
+  let hostname = parsedUrl.hostname;
+  if (hostname.startsWith("www.")) {
+    hostname = hostname.slice(4);
+  }
+
+  let shortenedURL = hostname;
+
+  const isHttp = ["http:", "https:"].includes(parsedUrl.protocol);
+  if (isHttp) {
+    return shortenedURL;
+  } else if (!isHttp && parsedUrl.hostname) {
+    parsedUrl.pathname = "";
+    parsedUrl.search = "";
+    parsedUrl.hash = "";
+    shortenedURL = parsedUrl.toString();
+  }
+
+  return parsedUrl.toString();
 }

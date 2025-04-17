@@ -13,7 +13,7 @@ A modern, tabbed web browser with Chrome extension support—built on Electron.
 
 Flow Browser is a lightweight, feature-rich web browser that combines the power of Chromium with a clean, modern interface. Built on Electron, it offers full support for Chrome extensions, making it a versatile alternative to mainstream browsers.
 
-## Install (v0.3.2)
+## Install (v0.4.0)
 
 > [!WARNING]
 >
@@ -25,12 +25,12 @@ Flow Browser is a lightweight, feature-rich web browser that combines the power 
 
 ```bash
 # Run this command in your terminal
-curl -LO https://github.com/MultiboxLabs/flow-browser/releases/download/v0.3.2/FlowInstaller.dmg && open .
+curl -LO https://github.com/MultiboxLabs/flow-browser/releases/download/v0.4.0/FlowInstaller.dmg && open .
 ```
 
 ### Windows:
 
-Download [FlowSetup.exe](https://github.com/MultiboxLabs/flow-browser/releases/download/v0.3.2/FlowSetup.exe)
+Download [FlowSetup.exe](https://github.com/MultiboxLabs/flow-browser/releases/download/v0.4.0/FlowSetup.exe)
 
 ### Linux:
 
@@ -38,17 +38,41 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 
 ## Screenshots
 
-![Flow Browser macOS Screenshot](./assets/screenshots/beta-1.png)
-![Flow Browser macOS Screenshot](./assets/screenshots/beta-2.png)
-![Flow Browser Windows Screenshot](./assets/screenshots/beta-3.png)
-![Flow Browser Windows Screenshot](./assets/screenshots/beta-4.png)
+![Onboarding - macOS](./assets/screenshots/beta-onboarding-1.png)
+![Browser - macOS](./assets/screenshots/beta-browser-1.png)
+![Command - macOS](./assets/screenshots/beta-command-1.png)
+![New Tab - macOS](./assets/screenshots/beta-newtab-1.png)
+![Settings - macOS](./assets/screenshots/beta-settings-1.png)
 
 ## Features
 
-- **Modern UI**: Clean, intuitive interface built with React 19 and Tailwind CSS
-- **Extension Support**: Compatible with most Chrome extensions from the Chrome Web Store
-- **Better New Tab**: Shows a popup omnibox which lets you search the web or quickly open a new tab, bookmark, or history.
+- **Profiles**: Multiple profiles support, allowing you to use different settings and extensions for each profile.
+- **Spaces**: Multiple spaces support, allowing you to organize your tabs into different spaces.
+- **Sidebar**: A sidebar that allows you to quickly access your bookmarks, history, and settings.
+- **Command Palette**: A command palette that allows you to search the web or quickly open a new tab, bookmark, or history.
+- **Good Security**: Asks before opening external applications.
+- **Simple Onboarding**: A simple onboarding process that allows you to quickly get started.
 - **Wide Customization**: Custom icons, new page mode, and more.
+- **Offline Games**: A collection of offline games to play when you have nothing to do. (flow://games)
+
+## Upcoming Features
+
+- **Reorder Tabs**: Allow you to reorder tabs.
+- **Native Adblocker**: A native adblocker that blocks ads and trackers.
+- **Topbar**: Allow you to customise between a topbar or sidebar.
+- **Downloads**: Allow you to download files from the web.
+- **Extensions**: Allow you to install chrome extensions from the Chrome Web Store.
+- **Favourites**: Allow you to add websites to your favourites.
+- **Pinned Tabs**: Allow you to pin tabs in spaces.
+- **Persist Tabs**: Allow you to persist tabs between restarts.
+- **Sleep Tabs**: Allow you to put tabs to sleep to save resources.
+- **Custom Search Engines**: Allow you to add custom search engines.
+- **Preview Tabs**: Allow you to preview tabs before switching to them.
+- **Widewine Support**: Allow you to watch DRM protected content.
+
+## Feedback / Feature Requests / Bugs
+
+https://flowbrowser.userjot.com/
 
 ## Contributing
 

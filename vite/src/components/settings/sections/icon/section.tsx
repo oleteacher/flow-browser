@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "motion/react";
-import { getIcons, getCurrentIcon, setCurrentIcon, isPlatformSupportedForIcon } from "@/lib/flow";
+import { toast } from "sonner";
 
 interface IconOption {
   id: string;
@@ -24,7 +24,7 @@ export function IconSettings() {
       setIsLoading(true);
       try {
         // Check if platform supports icon customization
-        const supported = await isPlatformSupportedForIcon();
+        const supported = await flow.icons.isPlatformSupported();
         setIsSupported(supported);
 
         if (!supported) {
@@ -33,7 +33,7 @@ export function IconSettings() {
         }
 
         // Fetch both icons and current icon in parallel
-        const [icons, currentIconId] = await Promise.all([getIcons(), getCurrentIcon()]);
+        const [icons, currentIconId] = await Promise.all([flow.icons.getIcons(), flow.icons.getCurrentIcon()]);
 
         setSelectedIcon(currentIconId);
 
@@ -64,8 +64,9 @@ export function IconSettings() {
 
     setIsUpdating(true);
     try {
-      const success = await setCurrentIcon(iconId);
+      const success = await flow.icons.setCurrentIcon(iconId);
       if (success) {
+        toast.success("Icon updated!");
         setSelectedIcon(iconId);
 
         // Update current status for icons
@@ -78,6 +79,7 @@ export function IconSettings() {
       }
     } catch (error) {
       console.error("Failed to update icon:", error);
+      toast.error("Failed to update icon!");
     } finally {
       setIsUpdating(false);
     }
@@ -117,7 +119,7 @@ export function IconSettings() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       {icon.imageId ? (
                         <img
-                          src={`flow-utility://asset/icons/${icon.imageId}`}
+                          src={`flow://asset/icons/${icon.imageId}`}
                           alt={icon.name}
                           className="h-10 w-10 rounded-lg shadow-lg flex items-center justify-center text-xl font-bold text-white"
                         />

@@ -1,10 +1,10 @@
-/* eslint-disable react-refresh/only-export-components */
-import { useEffect, useState, createContext, useContext } from "react";
+import { useEffect, useState, createContext, useContext, useMemo } from "react";
 
 type Theme = "light" | "dark" | "system";
 
 interface ThemeContextType {
   theme: Theme;
+  appliedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
   resolvedTheme: "light" | "dark";
 }
@@ -19,8 +19,21 @@ export function useTheme() {
   return context;
 }
 
-export function ThemeProvider({ persist = false, children }: { persist?: boolean; children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
+export function ThemeProvider({
+  forceTheme,
+  persist = false,
+  children
+}: {
+  forceTheme?: Theme;
+  persist?: boolean;
+  children: React.ReactNode;
+}) {
+  const [_theme, setTheme] = useState<Theme>(() => {
+    // If forceTheme is provided, use it
+    if (forceTheme) {
+      return forceTheme;
+    }
+
     if (persist) {
       // Check if there's a saved theme in localStorage
       const savedTheme = localStorage.getItem("theme");
@@ -33,16 +46,20 @@ export function ThemeProvider({ persist = false, children }: { persist?: boolean
     return "system";
   });
 
+  // If forceTheme is provided, use it
+  const theme = forceTheme ? forceTheme : _theme;
+
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
     window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   );
 
-  useEffect(() => {
-    // Determine the actual theme to apply
-    const applyTheme = theme === "system" ? resolvedTheme : theme;
+  const appliedTheme = useMemo(() => {
+    return theme === "system" ? resolvedTheme : theme;
+  }, [theme, resolvedTheme]);
 
+  useEffect(() => {
     // Apply theme class to document
-    if (applyTheme === "dark") {
+    if (appliedTheme === "dark") {
       document.documentElement.classList.add("dark");
       document.documentElement.classList.remove("light");
     } else {
@@ -54,7 +71,7 @@ export function ThemeProvider({ persist = false, children }: { persist?: boolean
       // Save theme to localStorage
       localStorage.setItem("theme", theme);
     }
-  }, [theme, resolvedTheme, persist]);
+  }, [theme, resolvedTheme, persist, appliedTheme]);
 
   useEffect(() => {
     // Listen for changes in color scheme preference
@@ -76,7 +93,7 @@ export function ThemeProvider({ persist = false, children }: { persist?: boolean
     };
   }, []);
 
-  const value = { theme, setTheme, resolvedTheme };
+  const value = { theme, appliedTheme, setTheme, resolvedTheme };
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

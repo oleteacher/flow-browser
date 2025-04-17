@@ -1,12 +1,14 @@
-import { FLOW_DATA_DIR } from "@/modules/paths";
-import path from "path";
 import fs from "fs/promises";
 import { DataStoreData, getDatastore } from "@/saving/datastore";
 import z from "zod";
 import { debugError } from "@/modules/output";
 import { getProfile, getProfiles, ProfileData } from "@/sessions/profiles";
+import { TypedEventEmitter } from "@/modules/typed-event-emitter";
+import path from "path";
 
-const SPACES_DIR = path.join(FLOW_DATA_DIR, "Spaces");
+export const spacesEmitter = new TypedEventEmitter<{
+  changed: [];
+}>();
 
 // Private
 function getSpaceDataStore(profileId: string, spaceId: string) {
@@ -18,7 +20,9 @@ const SpaceDataSchema = z.object({
   profileId: z.string(),
   bgStartColor: z.string().optional(),
   bgEndColor: z.string().optional(),
-  icon: z.string().optional()
+  icon: z.string().optional(),
+  lastUsed: z.number().default(0),
+  order: z.number().default(999)
 });
 
 export type SpaceData = z.infer<typeof SpaceDataSchema>;
@@ -34,64 +38,91 @@ function reconcileSpaceData(spaceId: string, profileId: string, data: DataStoreD
     profileId: data.profileId ?? profileId,
     bgStartColor: data.bgStartColor,
     bgEndColor: data.bgEndColor,
-    icon: data.icon
+    icon: data.icon,
+    lastUsed: data.lastUsed ?? 0,
+    order: data.order ?? 999
   };
 }
 
-// Utilities
-export function getSpacePath(profileId: string, spaceId: string): string {
-  return path.join(SPACES_DIR, profileId, spaceId);
+function onSpacesChanged() {
+  spacesEmitter.emit("changed");
 }
 
 // CRUD Operations
-export async function getSpace(profileId: string, spaceId: string) {
-  const spaceDir = getSpacePath(profileId, spaceId);
+export async function getSpace(spaceId: string) {
+  const profiles = await getProfiles();
+  for (const profile of profiles) {
+    const space = await getSpaceFromProfile(profile.id, spaceId);
+    if (space) {
+      return space;
+    }
+  }
+  return null;
+}
 
-  const stats = await fs.stat(spaceDir).catch(() => null);
-  if (!stats) return null;
-  if (!stats.isDirectory()) return null;
+export async function getSpaceFromProfile(profileId: string, spaceId: string) {
+  try {
+    const spaceStore = getSpaceDataStore(profileId, spaceId);
+    const data = await spaceStore.getFullData();
 
-  const spaceStore = getSpaceDataStore(profileId, spaceId);
-  const spaceData = await spaceStore.getFullData().then((data) => reconcileSpaceData(spaceId, profileId, data));
+    // If there's no data for this space, it doesn't exist
+    if (Object.keys(data).length === 0) return null;
 
-  return {
-    id: spaceId,
-    ...spaceData
-  };
+    const spaceData = reconcileSpaceData(spaceId, profileId, data);
+
+    return {
+      id: spaceId,
+      ...spaceData
+    };
+  } catch (error) {
+    debugError("SPACES", `Error getting space ${spaceId} from profile ${profileId}:`, error);
+    return null;
+  }
 }
 
 export async function createSpace(profileId: string, spaceId: string, spaceName: string) {
-  // Validate spaceId to prevent directory traversal attacks or invalid characters
+  // Validate spaceId to prevent invalid characters
   if (!/^[a-zA-Z0-9_-]+$/.test(spaceId)) {
-    debugError("PROFILES", `Invalid space ID: ${spaceId}`);
+    debugError("SPACES", `Invalid space ID: ${spaceId}`);
     return false;
   }
 
   // Make sure profile exists
   const profile = await getProfile(profileId);
   if (!profile) {
-    debugError("PROFILES", `Profile ${profileId} does not exist`);
+    debugError("SPACES", `Profile ${profileId} does not exist`);
     return false;
   }
 
   // Check if space already exists
-  const existingSpace = await getSpace(profileId, spaceId);
+  const existingSpace = await getSpaceFromProfile(profileId, spaceId);
   if (existingSpace) {
-    debugError("PROFILES", `Space ${spaceId} already exists in profile ${profileId}`);
+    debugError("SPACES", `Space ${spaceId} already exists in profile ${profileId}`);
     return false;
   }
 
   try {
-    const spacePath = getSpacePath(profileId, spaceId);
-    await fs.mkdir(spacePath, { recursive: true });
+    const order = await getSpaces()
+      .then((spaces) => {
+        return (
+          spaces
+            .filter((space) => space !== null)
+            .reduce((acc: number, space) => {
+              return Math.max(acc, space.order);
+            }, 0) + 1
+        );
+      })
+      .catch(() => 999);
 
     const spaceStore = getSpaceDataStore(profileId, spaceId);
     await spaceStore.set("name", spaceName);
     await spaceStore.set("profileId", profileId);
+    await spaceStore.set("order", order);
 
+    onSpacesChanged();
     return true;
   } catch (error) {
-    debugError("PROFILES", `Error creating space ${spaceId}:`, error);
+    debugError("SPACES", `Error creating space ${spaceId}:`, error);
     return false;
   }
 }
@@ -113,57 +144,86 @@ export async function updateSpace(profileId: string, spaceId: string, spaceData:
       await spaceStore.set("icon", spaceData.icon);
     }
 
+    // Space order must be updated with updateSpaceOrder() / reorderSpaces()
+
+    onSpacesChanged();
     return true;
   } catch (error) {
-    debugError("PROFILES", `Error updating space ${spaceId}:`, error);
+    debugError("SPACES", `Error updating space ${spaceId}:`, error);
     return false;
   }
 }
 
 export async function deleteSpace(profileId: string, spaceId: string) {
   try {
-    // Delete Space Directory
-    const spacePath = getSpacePath(profileId, spaceId);
-    await fs.rm(spacePath, { recursive: true, force: true });
-
     // Delete Space Data
     const spaceStore = getSpaceDataStore(profileId, spaceId);
     await spaceStore.wipe();
 
+    onSpacesChanged();
     return true;
   } catch (error) {
-    debugError("PROFILES", `Error deleting space ${spaceId}:`, error);
+    debugError("SPACES", `Error deleting space ${spaceId}:`, error);
     return false;
   }
 }
 
 export async function getSpacesFromProfile(profileId: string, prefetchedProfile?: ProfileData) {
   try {
-    const profile = prefetchedProfile ?? (await getProfile(profileId));
-    const profileSpacesDir = path.join(SPACES_DIR, profileId);
+    // Get profile spaces from datastore
+    const profileStore = getDatastore("main", ["profiles", profileId, "spaces"]);
 
-    // Check if directory exists first
-    const dirExists = await fs
-      .stat(profileSpacesDir)
-      .then((stats) => {
-        return stats.isDirectory();
-      })
-      .catch(() => false);
+    // Use fs with datastore.directoryPath to get space IDs
+    try {
+      // Get the directory path for spaces in this profile
+      const spacesPath = profileStore.directoryPath;
 
-    if (!dirExists) {
-      await fs.mkdir(profileSpacesDir, { recursive: true });
+      if (!spacesPath) {
+        debugError("SPACES", `Could not get directoryPath for profile ${profileId} spaces`);
+        return [];
+      }
+
+      // Check if directory exists
+      const dirExists = await fs
+        .stat(spacesPath)
+        .then((stats) => stats.isDirectory())
+        .catch(() => false);
+
+      if (!dirExists) {
+        return [];
+      }
+
+      // Read the directory to get space IDs
+      const spaceIds = (
+        await fs.readdir(spacesPath).then((ids) => {
+          const promises = ids.map((id) => {
+            const stats = fs.stat(path.join(spacesPath, id));
+            return stats.then((stats) => {
+              if (stats.isDirectory()) {
+                return id;
+              }
+              return null;
+            });
+          });
+          return Promise.all(promises);
+        })
+      ).filter((id) => id !== null);
+
+      if (!spaceIds || spaceIds.length === 0) {
+        return [];
+      }
+
+      // Get space data for each ID
+      const promises = spaceIds.map((spaceId: string) => getSpaceFromProfile(profileId, spaceId));
+      const spaces = await Promise.all(promises);
+
+      return spaces.filter((space) => space !== null);
+    } catch (error) {
+      debugError("SPACES", `Error reading spaces directory for profile ${profileId}:`, error);
       return [];
     }
-
-    const spaceDatas = await fs.readdir(profileSpacesDir).then((spaceIds) => {
-      const promises = spaceIds.map((spaceId) => getSpace(profileId, spaceId));
-      return Promise.all(promises);
-    });
-
-    const spaces = spaceDatas.filter((space) => space !== null);
-    return spaces;
   } catch (error) {
-    console.error("Error reading spaces directory:", error);
+    debugError("SPACES", `Error getting spaces from profile ${profileId}:`, error);
     return [];
   }
 }
@@ -171,14 +231,101 @@ export async function getSpacesFromProfile(profileId: string, prefetchedProfile?
 export async function getSpaces() {
   try {
     const profiles = await getProfiles();
-    const spaces = await Promise.all(
+    const profileSpaces = await Promise.all(
       profiles.map(async (profile) => {
         const profileSpaces = await getSpacesFromProfile(profile.id, profile);
         return profileSpaces;
       })
     );
-    return spaces.flat();
-  } catch {
+
+    const spaces = profileSpaces.flat();
+    return spaces.sort((a, b) => {
+      if (!a && !b) return 0;
+      if (!a) return 1;
+      if (!b) return -1;
+
+      const transformedA = reconcileSpaceData(a.id, a.profileId, a);
+      const transformedB = reconcileSpaceData(b.id, b.profileId, b);
+      return transformedA.order - transformedB.order;
+    });
+  } catch (error) {
+    debugError("SPACES", "Error getting all spaces:", error);
     return [];
+  }
+}
+
+export async function setSpaceLastUsed(profileId: string, spaceId: string) {
+  const spaceStore = getSpaceDataStore(profileId, spaceId);
+  return await spaceStore
+    .set("lastUsed", Date.now())
+    .then(() => {
+      return true;
+    })
+    .catch(() => {
+      return false;
+    });
+}
+
+export async function getLastUsedSpaceFromProfile(profileId: string) {
+  const spaces = await getSpacesFromProfile(profileId);
+  // Filter out null spaces before sorting
+  const validSpaces = spaces.filter((space) => space !== null);
+
+  if (validSpaces.length === 0) {
+    return null;
+  }
+
+  const sortedSpaces = validSpaces.sort((a, b) => {
+    const transformedA = reconcileSpaceData(a.id, a.profileId, a);
+    const transformedB = reconcileSpaceData(b.id, b.profileId, b);
+    return transformedB.lastUsed - transformedA.lastUsed;
+  });
+
+  return sortedSpaces[0];
+}
+
+export async function getLastUsedSpace() {
+  const spaces = await getSpaces();
+  // Filter out null spaces before sorting
+  const validSpaces = spaces.filter((space) => space !== null);
+
+  if (validSpaces.length === 0) {
+    return null;
+  }
+
+  const sortedSpaces = validSpaces.sort((a, b) => {
+    const transformedA = reconcileSpaceData(a.id, a.profileId, a);
+    const transformedB = reconcileSpaceData(b.id, b.profileId, b);
+    return transformedB.lastUsed - transformedA.lastUsed;
+  });
+
+  return sortedSpaces[0];
+}
+
+export async function updateSpaceOrder(profileId: string, spaceId: string, order: number) {
+  try {
+    const spaceStore = getSpaceDataStore(profileId, spaceId);
+    await spaceStore.set("order", order);
+    onSpacesChanged();
+    return true;
+  } catch (error) {
+    debugError("SPACES", `Error updating order for space ${spaceId}:`, error);
+    return false;
+  }
+}
+
+export async function reorderSpaces(orderMap: { profileId: string; spaceId: string; order: number }[]) {
+  try {
+    const updatePromises = orderMap.map(({ profileId, spaceId, order }) => {
+      const spaceStore = getSpaceDataStore(profileId, spaceId);
+      return spaceStore.set("order", order);
+    });
+
+    await Promise.all(updatePromises);
+    onSpacesChanged();
+    return true;
+  } catch (error) {
+    debugError("SPACES", "Error reordering spaces:", error);
+    return false;
   }
 }

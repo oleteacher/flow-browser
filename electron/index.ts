@@ -1,6 +1,10 @@
-import { app, ipcMain, Menu, MenuItem } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, MenuItem } from "electron";
 import { Browser } from "@/browser/browser";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
+import "@/ipc/main";
+import "@/settings/main";
+import { hasCompletedOnboarding } from "@/saving/onboarding";
+import { onboarding } from "@/onboarding/main";
 
 export let browser: Browser | null = null;
 
@@ -58,50 +62,6 @@ function setupMacOSDock(browser: Browser) {
   });
 }
 
-function setupIPCHandlers(browser: Browser) {
-  ipcMain.on("stop-loading-tab", (event, tabId: number) => {
-    const webContents = event.sender;
-    const window = browser.getWindowFromWebContents(webContents);
-    if (!window) return;
-
-    const tab = window.tabs.get(tabId);
-    if (!tab) return;
-
-    tab.webContents?.stop();
-  });
-
-  ipcMain.handle("get-tab-navigation-status", async (event, tabId: number) => {
-    const webContents = event.sender;
-    const window = browser.getWindowFromWebContents(webContents);
-    if (!window) return null;
-
-    const tab = window.tabs.get(tabId);
-    if (!tab) return null;
-
-    const tabWebContents = tab.webContents;
-    const navigationHistory = tabWebContents?.navigationHistory;
-    if (!navigationHistory) return null;
-
-    return {
-      navigationHistory: navigationHistory.getAllEntries(),
-      activeIndex: navigationHistory.getActiveIndex(),
-      canGoBack: navigationHistory.canGoBack(),
-      canGoForward: navigationHistory.canGoForward()
-    };
-  });
-
-  ipcMain.on("go-to-navigation-entry", (event, tabId: number, index: number) => {
-    const webContents = event.sender;
-    const window = browser.getWindowFromWebContents(webContents);
-    if (!window) return;
-
-    const tab = window.tabs.get(tabId);
-    if (!tab) return;
-
-    return tab.webContents?.navigationHistory?.goToIndex(index);
-  });
-}
-
 function printHeader() {
   if (!app.isPackaged) {
     console.log("\n".repeat(75));
@@ -146,13 +106,10 @@ function initializeApp() {
     } else {
       const window = browser.getWindows()[0];
       if (window) {
-        window.getBrowserWindow().focus();
+        window.window.focus();
       }
     }
   });
-
-  // Setup IPC handlers
-  setupIPCHandlers(browser);
 
   // Setup auto update
   setupAutoUpdate();
@@ -163,6 +120,36 @@ function initializeApp() {
   } else if (process.platform === "darwin") {
     setupMacOSDock(browser);
   }
+
+  // Open onboarding / create initial window
+  hasCompletedOnboarding().then((completed) => {
+    if (!completed) {
+      onboarding.show();
+    } else {
+      browser?.createWindow();
+    }
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      return app.quit();
+    }
+
+    // Quit app if onboarding isn't completed
+    hasCompletedOnboarding().then((completed) => {
+      if (!completed) {
+        app.quit();
+      }
+    });
+  });
+
+  app.whenReady().then(() => {
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        browser?.createWindow();
+      }
+    });
+  });
 }
 
 // Start the application
