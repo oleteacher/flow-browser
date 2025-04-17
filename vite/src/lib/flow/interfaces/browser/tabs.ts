@@ -33,4 +33,9 @@ export interface FlowTabsAPI {
    * @param tabId The id of the tab to close
    */
   closeTab: (tabId: number) => Promise<boolean>;
+
+  /**
+   * Disable Picture in Picture mode for a tab
+   */
+  disablePictureInPicture: () => Promise<boolean>;
 }
