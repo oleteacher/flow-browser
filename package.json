@@ -18,5 +18,15 @@
   },
   "devDependencies": {
     "prettier": "^3.5.3"
-  }
+  },
+  "trustedDependencies": [
+    "better-sqlite3",
+    "electron",
+    "electron-winstaller",
+    "esbuild",
+    "fs-xattr",
+    "lodepng",
+    "macos-alias",
+    "sharp"
+  ]
 }
