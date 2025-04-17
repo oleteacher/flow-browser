@@ -166,7 +166,9 @@ const config: ForgeConfig = {
     new AutoUnpackNativesPlugin({}),
     new FusesPlugin({
       version: FuseVersion.V1,
-      [FuseV1Options.EnableCookieEncryption]: true,
+      // Doesn't work unless it is code-signed on macOS.
+      // https://github.com/electron/electron/issues/45088#issuecomment-2561917933
+      [FuseV1Options.EnableCookieEncryption]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
       [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
       [FuseV1Options.OnlyLoadAppFromAsar]: true
