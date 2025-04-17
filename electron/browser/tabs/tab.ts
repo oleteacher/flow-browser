@@ -283,7 +283,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     // Enable transparent background for whitelisted protocols
     const WHITELISTED_PROTOCOLS = ["flow-internal:", "flow:"];
     const COLOR_TRANSPARENT = "#00000000";
-    const COLOR_BACKGROUND = "#ff000000";
+    const COLOR_BACKGROUND = "#ffffffff";
     this.on("updated", () => {
       if (this.url) {
         try {
