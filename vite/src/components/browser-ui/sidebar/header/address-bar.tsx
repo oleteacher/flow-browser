@@ -29,18 +29,18 @@ function FakeAddressBar() {
     );
   };
 
+  const simplifiedUrl = simplifyUrl(addressUrl);
+  const isPlaceholder = !simplifiedUrl;
+
   return (
     <Input
       ref={inputRef}
-      placeholder="Search or type URL"
-      value={simplifyUrl(addressUrl)}
+      value={isPlaceholder ? "Search or type URL" : simplifiedUrl}
       className={cn(
         "rounded-xl border-0",
         "select-none selection:bg-transparent !ring-0",
         "bg-white/20 dark:bg-white/15",
-        "text-black dark:text-white",
-        "placeholder:text-black placeholder:dark:text-white",
-        "text-opacity-0 placeholder:text-opacity-50"
+        isPlaceholder ? "text-black/60 dark:text-white/60" : "text-black dark:text-white"
       )}
       readOnly
       onClick={handleClick}
