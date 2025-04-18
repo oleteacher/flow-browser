@@ -36,15 +36,6 @@ export class Omnibox {
       this.updateBounds();
     });
 
-    // on window focus, focus omnibox if showing
-    parentWindow.on("focus", () => {
-      debugPrint("OMNIBOX", "Parent window focus event received");
-      // Have to wait for the tab to be focused, then focus this. (So the tab doesn't steal focus)
-      setTimeout(() => {
-        this.refocus();
-      }, 10);
-    });
-
     setTimeout(() => {
       this.loadInterface(null);
       this.updateBounds();
@@ -146,7 +137,9 @@ export class Omnibox {
     if (this.isVisible()) {
       debugPrint("OMNIBOX", "Refocusing omnibox");
       this.webContents.focus();
+      return true;
     }
+    return false;
   }
 
   hide() {

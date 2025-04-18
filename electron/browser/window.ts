@@ -86,6 +86,13 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
     // Focus on the focused tab
     // Electron does not do this automatically, so we are forced to do it manually.
     this.window.on("focus", () => {
+      // Try focusing the omnibox first
+      const focusedOmnibox = this.omnibox.refocus();
+      if (focusedOmnibox) {
+        return;
+      }
+
+      // If omnibox cannot be focused, focus the focused tab
       const tabManager = this.browser.tabs;
       const currentSpace = this.getCurrentSpace();
       if (!currentSpace) return;
