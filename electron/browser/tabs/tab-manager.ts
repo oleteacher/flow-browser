@@ -197,11 +197,8 @@ export class TabManager extends TypedEventEmitter<TabManagerEvents> {
   public disablePictureInPicture(tabId: number) {
     const tab = this.getTabById(tabId);
     if (tab && tab.isPictureInPicture) {
-      tab.isPictureInPicture = false;
-      tab.emit("updated");
-
+      tab.updateStateProperty("isPictureInPicture", false);
       this.setActiveTab(tab);
-
       return true;
     }
     return false;

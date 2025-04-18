@@ -93,16 +93,42 @@ ipcMain.handle("tabs:get-data", async (event) => {
   return getWindowTabsData(window);
 });
 
-export function windowTabsChanged(windowId: number) {
-  const window = browser?.getWindowById(windowId);
-  if (!window) return;
+const windowTabsChangedQueue: Set<number> = new Set();
+let windowTabsChangedQueueTimeout: NodeJS.Timeout | null = null;
 
-  const data = getWindowTabsData(window);
-  if (!data) return;
+function processWindowTabsChangedQueue() {
+  if (windowTabsChangedQueue.size === 0) return;
+  if (!browser) return;
 
-  for (const webContents of window.coreWebContents) {
-    webContents.send("tabs:on-data-changed", data);
+  for (const windowId of Array.from(windowTabsChangedQueue)) {
+    const window = browser.getWindowById(windowId);
+    if (!window) continue;
+
+    const data = getWindowTabsData(window);
+    if (!data) continue;
+
+    for (const webContents of window.coreWebContents) {
+      webContents.send("tabs:on-data-changed", data);
+    }
   }
+
+  windowTabsChangedQueue.clear();
+}
+
+export function windowTabsChanged(windowId: number) {
+  // A set is used to avoid duplicates
+  windowTabsChangedQueue.add(windowId);
+
+  if (windowTabsChangedQueueTimeout) {
+    // Already processing the queue, do nothing.
+    return;
+  }
+
+  // Process the queue every 50ms
+  windowTabsChangedQueueTimeout = setTimeout(() => {
+    processWindowTabsChangedQueue();
+    windowTabsChangedQueueTimeout = null;
+  }, 50);
 }
 
 ipcMain.handle("tabs:switch-to-tab", async (event, tabId: number) => {

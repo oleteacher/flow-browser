@@ -49,7 +49,7 @@ function InternalBrowserUI({ isReady }: { isReady: boolean }) {
       <SidebarInset className="bg-transparent">
         <div
           className={cn(
-            "dark flex-1 flex p-3 platform-win32:pt-[calc(env(titlebar-area-y)+env(titlebar-area-height))] app-drag",
+            "dark flex-1 flex p-2.5 platform-win32:pt-[calc(env(titlebar-area-y)+env(titlebar-area-height))] app-drag",
             open && "pl-1"
           )}
         >

@@ -21,11 +21,17 @@ interface PatchedWebContentsView extends WebContentsView {
   destroy: () => void;
 }
 
+type TabStateProperty = "visible" | "isDestroyed" | "faviconURL" | "fullScreen" | "isPictureInPicture";
+type TabContentProperty = "title" | "url" | "isLoading" | "audible" | "muted";
+
+type TabPublicProperty = TabStateProperty | TabContentProperty;
+
 type TabEvents = {
   "space-changed": [];
   "window-changed": [];
   focused: [];
-  updated: [];
+  // Updated property keys
+  updated: [TabPublicProperty[]];
   destroyed: [];
 };
 
@@ -87,19 +93,20 @@ export class Tab extends TypedEventEmitter<TabEvents> {
   public readonly profileId: string;
   public spaceId: string;
 
-  // State properties
+  // State properties (Recorded)
   public visible: boolean = false;
   public isDestroyed: boolean = false;
   public faviconURL: string | null = null;
   public fullScreen: boolean = false;
+  public isPictureInPicture: boolean = false;
 
-  // Content properties
+  // Content properties (From WebContents)
   public title: string = "New Tab";
   public url: string = "";
   public isLoading: boolean = false;
   public audible: boolean = false;
   public muted: boolean = false;
-  public isPictureInPicture: boolean = false;
+
   // View & content objects
   public readonly view: PatchedWebContentsView;
   public readonly webContents: WebContents;
@@ -183,10 +190,8 @@ export class Tab extends TypedEventEmitter<TabEvents> {
   }
 
   private setFullScreen(isFullScreen: boolean) {
-    if (this.fullScreen === isFullScreen) return false;
-
-    this.fullScreen = isFullScreen;
-    this.emit("updated");
+    const updated = this.updateStateProperty("fullScreen", isFullScreen);
+    if (!updated) return false;
 
     const tabbedWindow = this.window;
     const window = tabbedWindow.window;
@@ -245,8 +250,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
         cacheFavicon(url, faviconURL, this.session);
       }
       if (faviconURL && faviconURL !== this.faviconURL) {
-        this.faviconURL = faviconURL;
-        this.emit("updated");
+        this.updateStateProperty("faviconURL", faviconURL);
       }
     });
 
@@ -284,16 +288,17 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     const WHITELISTED_PROTOCOLS = ["flow-internal:", "flow:"];
     const COLOR_TRANSPARENT = "#00000000";
     const COLOR_BACKGROUND = "#ffffffff";
-    this.on("updated", () => {
-      if (this.url) {
-        try {
-          const url = new URL(this.url);
+    this.on("updated", (properties) => {
+      if (properties.includes("url") && this.url) {
+        const url = URL.parse(this.url);
+
+        if (url) {
           if (WHITELISTED_PROTOCOLS.includes(url.protocol)) {
             this.view.setBackgroundColor(COLOR_TRANSPARENT);
           } else {
             this.view.setBackgroundColor(COLOR_BACKGROUND);
           }
-        } catch {
+        } else {
           // Bad URL
           this.view.setBackgroundColor(COLOR_BACKGROUND);
         }
@@ -346,46 +351,57 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     return newTab.webContents;
   }
 
+  public updateStateProperty<T extends TabStateProperty>(property: T, newValue: this[T]) {
+    if (this.isDestroyed) return false;
+
+    const currentValue = this[property];
+    if (currentValue === newValue) return false;
+
+    this[property] = newValue;
+    this.emit("updated", [property]);
+    return true;
+  }
+
   public updateTabState() {
     if (this.isDestroyed) return;
 
     const { webContents } = this;
 
-    let changed = false;
+    const changedKeys: TabContentProperty[] = [];
 
     const newTitle = webContents.getTitle();
     if (newTitle !== this.title) {
       this.title = newTitle;
-      changed = true;
+      changedKeys.push("title");
     }
 
     const newUrl = webContents.getURL();
     if (newUrl !== this.url) {
       this.url = newUrl;
-      changed = true;
+      changedKeys.push("url");
     }
 
     const newIsLoading = webContents.isLoading();
     if (newIsLoading !== this.isLoading) {
       this.isLoading = newIsLoading;
-      changed = true;
+      changedKeys.push("isLoading");
     }
 
     // Note: webContents.isCurrentlyAudible() might be more accurate than isAudioMuted() sometimes
     const newAudible = webContents.isCurrentlyAudible();
     if (newAudible !== this.audible) {
       this.audible = newAudible;
-      changed = true;
+      changedKeys.push("audible");
     }
 
     const newMuted = webContents.isAudioMuted();
     if (newMuted !== this.muted) {
       this.muted = newMuted;
-      changed = true;
+      changedKeys.push("muted");
     }
 
-    if (changed) {
-      this.emit("updated");
+    if (changedKeys.length > 0) {
+      this.emit("updated", changedKeys);
       return true;
     }
     return false;
@@ -530,8 +546,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
 
         exitedPiPPromise.then((result) => {
           if (result) {
-            this.isPictureInPicture = false;
-            this.emit("updated");
+            this.updateStateProperty("isPictureInPicture", false);
           }
         });
       } else {
@@ -574,8 +589,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
 
         enteredPiPPromise.then((result) => {
           if (result) {
-            this.isPictureInPicture = true;
-            this.emit("updated");
+            this.updateStateProperty("isPictureInPicture", true);
           }
         });
       }
@@ -674,9 +688,9 @@ export class Tab extends TypedEventEmitter<TabEvents> {
    * Shows the tab
    */
   public show() {
-    if (this.visible) return;
-    this.visible = true;
-    this.emit("updated");
+    const updated = this.updateStateProperty("visible", true);
+    // Already visible
+    if (!updated) return;
     this.updateLayout();
   }
 
@@ -684,9 +698,9 @@ export class Tab extends TypedEventEmitter<TabEvents> {
    * Hides the tab
    */
   public hide() {
-    if (!this.visible) return;
-    this.visible = false;
-    this.emit("updated");
+    const updated = this.updateStateProperty("visible", false);
+    // Already hidden
+    if (!updated) return;
     this.updateLayout();
   }
 
