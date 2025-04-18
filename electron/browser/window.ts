@@ -83,6 +83,22 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       this.emit("leave-full-screen");
     });
 
+    // Focus on the focused tab
+    // Electron does not do this automatically, so we are forced to do it manually.
+    this.window.on("focus", () => {
+      const tabManager = this.browser.tabs;
+      const currentSpace = this.getCurrentSpace();
+      if (!currentSpace) return;
+
+      const focusedTab = tabManager.getFocusedTab(this.id, currentSpace);
+      if (!focusedTab) return;
+
+      const tabWC = focusedTab.webContents;
+      if (!tabWC.isFocused()) {
+        tabWC.focus();
+      }
+    });
+
     this.window.once("ready-to-show", () => {
       this.window.show();
       this.window.focus();

@@ -39,7 +39,10 @@ export class Omnibox {
     // on window focus, focus omnibox if showing
     parentWindow.on("focus", () => {
       debugPrint("OMNIBOX", "Parent window focus event received");
-      this.refocus();
+      // Have to wait for the tab to be focused, then focus this. (So the tab doesn't steal focus)
+      setTimeout(() => {
+        this.refocus();
+      }, 10);
     });
 
     setTimeout(() => {
