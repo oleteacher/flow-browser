@@ -113,6 +113,11 @@ function initializeApp() {
         window.window.focus();
       }
     }
+
+    const url = commandLine.pop();
+    if (url) {
+      handleOpenUrl(url);
+    }
   });
 
   // Setup auto update
@@ -156,7 +161,7 @@ function initializeApp() {
   });
 
   // Handle open links
-  app.on("open-url", async (_event, url) => {
+  const handleOpenUrl = async (url: string) => {
     if (!browser) return;
 
     if (!app.isReady) {
@@ -192,6 +197,10 @@ function initializeApp() {
     const tab = await browser.tabs.createTab(window.id);
     tab.loadURL(url);
     browser.tabs.setActiveTab(tab);
+  };
+
+  app.on("open-url", async (_event, url) => {
+    handleOpenUrl(url);
   });
 }
 
