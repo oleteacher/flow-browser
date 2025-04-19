@@ -216,13 +216,15 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     }
 
     // Restore states
-    if (title) {
-      this.title = title;
-    }
+    setImmediate(() => {
+      if (title) {
+        this.title = title;
+      }
 
-    if (faviconURL) {
-      this.updateStateProperty("faviconURL", faviconURL);
-    }
+      if (faviconURL) {
+        this.updateStateProperty("faviconURL", faviconURL);
+      }
+    });
 
     // Set creation time
     this.createdAt = Math.floor(Date.now() / 1000);
