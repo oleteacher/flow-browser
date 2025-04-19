@@ -6,11 +6,17 @@ import { getSpace } from "@/sessions/spaces";
 import { ipcMain } from "electron";
 import { TabData, TabGroupData, WindowActiveTabIds, WindowFocusedTabIds } from "~/types/tabs";
 
-function getTabData(tab: Tab): TabData {
+export function getTabData(tab: Tab): TabData {
   return {
     id: tab.id,
+    uniqueId: tab.uniqueId,
+    createdAt: tab.createdAt,
+    lastActiveAt: tab.lastActiveAt,
+
     profileId: tab.profileId,
     spaceId: tab.spaceId,
+    windowId: tab.getWindow().id,
+
     title: tab.title,
     url: tab.url,
     isLoading: tab.isLoading,
@@ -20,11 +26,13 @@ function getTabData(tab: Tab): TabData {
     isPictureInPicture: tab.isPictureInPicture,
     faviconURL: tab.faviconURL,
     asleep: tab.asleep,
-    navHistory: tab.navHistory
+
+    navHistory: tab.navHistory,
+    navHistoryIndex: tab.navHistoryIndex
   };
 }
 
-function getTabGroupData(tabGroup: TabGroup): TabGroupData {
+export function getTabGroupData(tabGroup: TabGroup): TabGroupData {
   return {
     id: tabGroup.id,
     mode: tabGroup.mode,
