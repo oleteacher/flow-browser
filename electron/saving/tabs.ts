@@ -1,5 +1,5 @@
 import { Browser } from "@/browser/browser";
-import { Tab } from "@/browser/tabs/tab";
+import { SLEEP_MODE_URL, Tab } from "@/browser/tabs/tab";
 import { browser } from "@/index";
 import { getTabData } from "@/ipc/browser/tabs";
 import { ArchiveTabValueMap } from "@/modules/basic-settings";
@@ -16,6 +16,10 @@ const TabGroupsDataStore = getDatastore("tabgroups");
 export async function persistTabToStorage(tab: Tab) {
   const window = tab.getWindow();
   if (window.type !== "normal") return;
+
+  // Prevent saving tabs stuck in sleep mode
+  if (tab.url === SLEEP_MODE_URL) return;
+  if (tab.asleep) return;
 
   const uniqueId = tab.uniqueId;
   const tabData = getTabData(tab);
