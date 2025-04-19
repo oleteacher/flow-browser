@@ -16,7 +16,7 @@ import { SidebarSpacesSwitcher } from "@/components/browser-ui/sidebar/spaces-sw
 import { ScrollableSidebarContent } from "@/components/browser-ui/sidebar/content/sidebar-content";
 import { useSpaces } from "@/components/providers/spaces-provider";
 import { NavigationControls } from "@/components/browser-ui/sidebar/header/action-buttons";
-import { SidebarAddressBar } from "@/components/browser-ui/sidebar/header/address-bar";
+import { SidebarAddressBar } from "@/components/browser-ui/sidebar/header/address-bar/address-bar";
 
 type BrowserSidebarProps = {
   collapseMode: CollapseMode;
