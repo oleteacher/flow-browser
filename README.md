@@ -87,3 +87,7 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0) - s
 Some parts of Flow Browser are based on [electron-browser-shell](https://github.com/samuelmaddock/electron-browser-shell) by [Sam Maddock](https://github.com/samuelmaddock), with enhancements and modifications.
 
 Design inspired by [Arc Browser](https://arc.net) and [Zen Browser](https://zen-browser.app/), which has a minimalistic design that is clean and simple.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=multiboxlabs/flow-browser&type=Date)](https://www.star-history.com/#multiboxlabs/flow-browser&Date)
