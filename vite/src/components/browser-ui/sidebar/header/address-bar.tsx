@@ -1,9 +1,10 @@
 import { useTabs } from "@/components/providers/tabs-provider";
+import { Button } from "@/components/ui/button";
 import { SidebarGroup, useSidebar } from "@/components/ui/resizable-sidebar";
 import { simplifyUrl } from "@/lib/url";
-import { cn } from "@/lib/utils";
-import { SearchIcon } from "lucide-react";
-import { useRef } from "react";
+import { cn, copyTextToClipboard } from "@/lib/utils";
+import { CheckIcon, LinkIcon, SearchIcon } from "lucide-react";
+import { useRef, useState } from "react";
 
 function FakeAddressBar() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +35,21 @@ function FakeAddressBar() {
 
   const value = isPlaceholder ? "Search or type URL" : simplifiedUrl;
 
+  const [copied, setCopied] = useState(false);
+  const copyUrl = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (copied) return;
+
+    event.stopPropagation();
+    copyTextToClipboard(addressUrl, false).then((success) => {
+      if (success) {
+        setCopied(true);
+        setTimeout(() => {
+          setCopied(false);
+        }, 3000);
+      }
+    });
+  };
+
   return (
     <div
       className={cn(
@@ -55,6 +71,23 @@ function FakeAddressBar() {
     >
       {isPlaceholder && <SearchIcon className="size-3.5" strokeWidth={2.5} />}
       <span className={cn("text-sm font-medium")}>{value}</span>
+      {/* Right Side */}
+      <div className="ml-auto flex items-center gap-1">
+        {!isPlaceholder && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-6 hover:bg-black/10 dark:hover:bg-white/10"
+            onClick={copyUrl}
+          >
+            {copied ? (
+              <CheckIcon className="size-3.5" strokeWidth={2.5} />
+            ) : (
+              <LinkIcon className="size-3.5" strokeWidth={2.5} />
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

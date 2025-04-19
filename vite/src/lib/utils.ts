@@ -18,15 +18,19 @@ export async function getLucideIcon(iconId: string): Promise<LucideIcon> {
   return CircleHelpIcon;
 }
 
-export async function copyTextToClipboard(text: string) {
+export async function copyTextToClipboard(text: string, hasToast = true) {
   return await navigator.clipboard
     .writeText(text)
     .then(() => {
-      toast.success("Copied to clipboard!");
+      if (hasToast) {
+        toast.success("Copied to clipboard!");
+      }
       return true;
     })
     .catch(() => {
-      toast.error("Failed to copy to clipboard.");
+      if (hasToast) {
+        toast.error("Failed to copy to clipboard.");
+      }
       return false;
     });
 }

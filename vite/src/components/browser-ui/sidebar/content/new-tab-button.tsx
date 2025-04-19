@@ -31,7 +31,7 @@ export function NewTabButton() {
       }}
       className={cn(SIDEBAR_HOVER_COLOR, "text-black/50 dark:text-muted-foreground")}
     >
-      <PlusIcon className="size-4" />
+      <PlusIcon className="size-4" strokeWidth={3} />
       <span className="font-medium">New Tab</span>
     </MotionSidebarMenuButton>
   );
