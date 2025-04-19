@@ -1,5 +1,6 @@
 import { SIDEBAR_HOVER_COLOR } from "@/components/browser-ui/browser-sidebar";
 import { GoBackButton, GoForwardButton } from "@/components/browser-ui/sidebar/header/navigation-buttons";
+import { RefreshCWIcon, RefreshCWIconHandle } from "@/components/icons/refresh-cw";
 import { useTabs } from "@/components/providers/tabs-provider";
 import {
   SidebarGroup,
@@ -10,8 +11,10 @@ import {
 } from "@/components/ui/resizable-sidebar";
 import { NavigationEntry } from "@/lib/flow/interfaces/browser/navigation";
 import { cn } from "@/lib/utils";
-import { RefreshCwIcon, SidebarCloseIcon, SidebarOpenIcon, XIcon } from "lucide-react";
-import { ComponentProps, useEffect, useState } from "react";
+import { SidebarCloseIcon, SidebarOpenIcon, XIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { ComponentProps, useCallback, useEffect, useRef, useState } from "react";
+import { TabData } from "~/types/tabs";
 
 export type NavigationEntryWithIndex = NavigationEntry & { index: number };
 
@@ -32,6 +35,61 @@ export function SidebarActionButton({
     >
       {icon}
     </SidebarMenuButton>
+  );
+}
+
+function ReloadButton({ focusedTab, handleReload }: { focusedTab: TabData | null; handleReload: () => void }) {
+  const iconRef = useRef<RefreshCWIconHandle>(null);
+  const isPressed = useRef(false);
+
+  const handleMouseDown = useCallback(() => {
+    if (!iconRef.current) return;
+    iconRef.current.startAnimation();
+    isPressed.current = true;
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    if (!iconRef.current) return;
+    iconRef.current.stopAnimation();
+    isPressed.current = false;
+  }, []);
+
+  // Add global mouseup listener to handle mouse release outside the button
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isPressed.current) {
+        handleMouseUp();
+      }
+    };
+
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [handleMouseUp]);
+
+  return (
+    <SidebarActionButton
+      icon={<RefreshCWIcon ref={iconRef} className="size-4 !bg-transparent !cursor-default" asChild />}
+      onClick={handleReload}
+      className={SIDEBAR_HOVER_COLOR}
+      disabled={!focusedTab}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+    />
+  );
+}
+
+function StopLoadingIcon() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+    >
+      <XIcon className="w-4 h-4" />
+    </motion.div>
   );
 }
 
@@ -110,21 +168,17 @@ export function NavigationControls() {
         <SidebarMenuItem className="flex flex-row gap-0.5">
           <GoBackButton canGoBack={canGoBack} backwardTabs={entries.slice(0, activeIndex).reverse()} />
           <GoForwardButton canGoForward={canGoForward} forwardTabs={entries.slice(activeIndex + 1)} />
-          {!isLoading && (
-            <SidebarActionButton
-              icon={<RefreshCwIcon className="w-4 h-4" />}
-              onClick={handleReload}
-              className={SIDEBAR_HOVER_COLOR}
-              disabled={!focusedTab}
-            />
-          )}
-          {isLoading && (
-            <SidebarActionButton
-              icon={<XIcon className="w-4 h-4" />}
-              onClick={handleStopLoading}
-              className={SIDEBAR_HOVER_COLOR}
-            />
-          )}
+          <AnimatePresence mode="wait" initial={true}>
+            {!isLoading && <ReloadButton key="reload-button" focusedTab={focusedTab} handleReload={handleReload} />}
+            {isLoading && (
+              <SidebarActionButton
+                key="stop-loading-button"
+                icon={<StopLoadingIcon />}
+                onClick={handleStopLoading}
+                className={SIDEBAR_HOVER_COLOR}
+              />
+            )}
+          </AnimatePresence>
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
