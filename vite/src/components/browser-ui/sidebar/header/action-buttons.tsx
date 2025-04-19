@@ -48,7 +48,13 @@ export function NavigationControls() {
 
   useEffect(() => {
     const tabId = focusedTab?.id;
-    if (!tabId) return;
+    if (!tabId) {
+      setCanGoBack(false);
+      setCanGoForward(false);
+      setEntries([]);
+      setActiveIndex(0);
+      return;
+    }
 
     flow.navigation.getTabNavigationStatus(tabId).then((status) => {
       if (!status) return;
