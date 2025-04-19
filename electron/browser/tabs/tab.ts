@@ -321,8 +321,11 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       }
     });
 
-    tabbedWindow.on("leave-full-screen", () => {
+    const disconnectLeaveFullScreen = tabbedWindow.connect("leave-full-screen", () => {
       this.setFullScreen(false);
+    });
+    this.on("destroyed", () => {
+      disconnectLeaveFullScreen();
     });
 
     // Used by the tab manager to determine which tab is focused
