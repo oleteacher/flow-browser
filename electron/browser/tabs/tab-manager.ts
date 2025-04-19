@@ -378,6 +378,7 @@ export class TabManager extends TypedEventEmitter<TabManagerEvents> {
   private setFocusedTab(tab: Tab) {
     const windowSpaceReference = `${tab.getWindow().id}-${tab.spaceId}` as WindowSpaceReference;
     this.spaceFocusedTabMap.set(windowSpaceReference, tab);
+    tab.webContents.focus(); // Ensure the tab's web contents is focused
   }
 
   /**
