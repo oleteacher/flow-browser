@@ -1,136 +1,210 @@
-// My Two Cents:
-// Lucide had been great, but WHY IS ITS NAMING SCHEME SO BAD?
-// It uses kebab-case for lucide-react icons, but camelCase for lucide icons.
-// Why????
-
-import { MenuItemConstructorOptions, nativeImage, NativeImage } from "electron";
+import { app, MenuItemConstructorOptions, nativeImage, NativeImage } from "electron";
 import { Browser } from "@/browser/browser";
-import { getLastUsedSpace, getSpaces, setSpaceLastUsed, spacesEmitter } from "@/sessions/spaces";
+import { getSpaces } from "@/sessions/spaces";
 import { getFocusedBrowserWindowData } from "../helpers";
 import { settings } from "@/settings/main";
-import { icons } from "lucide";
 import sharp from "sharp";
 import { setWindowSpace } from "@/ipc/session/spaces";
+import path from "path";
+import { readFile } from "fs/promises";
+import { IconEntry, icons } from "@phosphor-icons/core";
+import { getFocusedWindow } from "@/modules/windows";
 
-// String utilities
-const toCamelCase = (str: string): string => {
-  return str
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join("");
-};
+// Types
+interface Space {
+  id: string;
+  name: string;
+  icon?: string;
+}
 
-// Icon utilities
-const getLucideIcon = (name: string): any => {
-  const formattedName = toCamelCase(name);
-  const icon = icons[formattedName as keyof typeof icons];
+const PhosphorIcons = icons as unknown as IconEntry[];
 
-  if (!icon) {
-    console.warn(`Icon ${formattedName} not found`);
+/**
+ * Icon utilities
+ */
+function getIconNameFromPascalCase(pascalCaseName: string): string {
+  const icon = PhosphorIcons.find((icon) => icon.pascal_name === pascalCaseName);
+  return icon?.name || "dot-outline";
+}
+
+function getPhosphorIconPath(pascalName: string): string | null {
+  const name = getIconNameFromPascalCase(pascalName);
+  if (!name) return null;
+
+  try {
+    // Find the icon directly from node_modules in dev, or from app.asar in production
+    let iconPath: string;
+
+    // Use the packaged path if the app is packaged
+    if (app.isPackaged) {
+      const pkgPath = path.join(process.resourcesPath, "duotone", `${name}-duotone.svg`);
+      iconPath = pkgPath;
+    } else {
+      const devPath = path.join(
+        require.resolve("@phosphor-icons/core"),
+        "..",
+        "..",
+        "assets",
+        "duotone",
+        `${name}-duotone.svg`
+      );
+      iconPath = devPath;
+    }
+
+    return iconPath;
+  } catch (error) {
+    console.error("Failed to resolve phosphor-icons path:", error);
+    return null;
+  }
+}
+
+const svgPlatforms: NodeJS.Platform[] = ["darwin"];
+async function createSvgFromIconPath(iconPath: string): Promise<NativeImage | null> {
+  if (!svgPlatforms.includes(process.platform)) {
+    // The SVG will not show on the platform, so it's not needed
     return null;
   }
 
-  return icon;
-};
-
-const createSvgFromPathArray = async (pathArray: any[], padding: number = 2): Promise<NativeImage | null> => {
   try {
-    // Create SVG string from path array
-    const svgContent = pathArray
-      .map(([elementType, attributes]) => {
-        const attributesString = Object.entries(attributes)
-          .map(([key, value]) => `${key}="${value}"`)
-          .join(" ");
-        return `<${elementType} ${attributesString}/>`;
-      })
-      .join("");
+    let svgString = await readFile(iconPath, "utf8");
 
-    // Adjust dimensions to account for padding
-    const size = 24;
-    const paddedSize = size + padding * 2;
+    // Make SVG white using a more robust approach
+    // 1. Handle existing fill attributes on the SVG root
+    svgString = svgString.replace(/<svg([^>]*)>/, (match, attributes) => {
+      // Remove any existing fill attribute
+      const cleanedAttributes = attributes.replace(/\s*fill="[^"]*"\s*/g, " ");
+      return `<svg${cleanedAttributes} fill="white">`;
+    });
 
-    // Wrap in SVG element with proper dimensions and viewBox
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${paddedSize}" height="${paddedSize}" viewBox="0 0 ${paddedSize} ${paddedSize}" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <g transform="translate(${padding}, ${padding})">
-        ${svgContent}
-      </g>
-    </svg>`;
+    // 2. Add style to ensure all elements inherit the white color
+    svgString = svgString.replace(/<svg([^>]*)>/, (match) => {
+      return `${match}<style>* { fill: white; stroke: white; }</style>`;
+    });
 
     // Convert to native image
     const iconBuffer = await sharp(Buffer.from(svgString)).png().resize(16, 16).toBuffer();
+
     return nativeImage.createFromBuffer(iconBuffer);
   } catch (error) {
-    console.error("Error creating SVG from path array:", error);
+    console.error("Error creating SVG from path:", error);
     return null;
   }
-};
+}
 
-type IconCacheKey = `${number}-${string}`;
+// Icon cache
+type IconCacheKey = `${string}`;
 const iconCache = new Map<IconCacheKey, NativeImage>();
-const getLucideIconAsNativeImage = async (name: string, padding?: number): Promise<NativeImage | null> => {
-  const cacheKey = `${name}-${padding}` as IconCacheKey;
+
+async function getIconAsNativeImage(name: string): Promise<NativeImage | null> {
+  const cacheKey = `${name}` as IconCacheKey;
+
+  // Check cache first
   if (iconCache.has(cacheKey)) {
     return iconCache.get(cacheKey) as NativeImage;
   }
 
-  const icon = getLucideIcon(name);
-  if (!icon) return null;
-  const image = await createSvgFromPathArray(icon, padding);
-  iconCache.set(cacheKey, image as NativeImage);
-  return image;
-};
+  // Create new icon if not in cache
+  const iconPath = getPhosphorIconPath(name);
+  if (!iconPath) return null;
 
-// Space menu item creation
-const createSpaceMenuItem = async (
-  space: any,
+  const image = await createSvgFromIconPath(iconPath);
+  if (image) {
+    iconCache.set(cacheKey, image);
+  }
+
+  return image;
+}
+
+/**
+ * Space menu item creation
+ */
+async function createSpaceMenuItem(
+  space: Space,
   index: number,
-  lastUsedSpaceId: string,
-  padding: number = 2
-): Promise<MenuItemConstructorOptions> => {
+  currentSpaceId: string | null
+): Promise<MenuItemConstructorOptions> {
   let iconImage = null;
 
   if (space.icon) {
-    iconImage = await getLucideIconAsNativeImage(space.icon, padding);
+    try {
+      iconImage = await getIconAsNativeImage(space.icon);
+    } catch (error) {
+      console.error(`Failed to load icon for space "${space.name}":`, error);
+      // Continue without an icon
+    }
   }
 
+  const checked = space.id === currentSpaceId;
   return {
-    checked: space.id === lastUsedSpaceId,
+    type: "checkbox",
+    id: `space-${space.id}-${checked ? "checked" : "unchecked"}`,
+    checked,
     label: space.name,
     accelerator: `Ctrl+${index + 1}`,
     click: () => {
       const winData = getFocusedBrowserWindowData();
-      if (!winData) return;
-
-      const win = winData.tabbedBrowserWindow;
-      if (win) {
-        setWindowSpace(win, space.id);
-      }
+      if (!winData?.tabbedBrowserWindow) return;
+      setWindowSpace(winData.tabbedBrowserWindow, space.id);
     },
     ...(iconImage ? { icon: iconImage } : {})
   };
-};
+}
 
-// Main export function
-export const createSpacesMenu = async (browser: Browser, padding: number = 2): Promise<MenuItemConstructorOptions> => {
-  const spaces = await getSpaces();
-  const lastUsedSpace = await getLastUsedSpace();
+/**
+ * Creates the Spaces menu for the application
+ */
+export async function createSpacesMenu(_browser: Browser): Promise<MenuItemConstructorOptions> {
+  try {
+    const spaces = await getSpaces();
 
-  const spaceMenuItems = await Promise.all(
-    spaces.map((space, index) => {
-      if (!lastUsedSpace) return null;
-      return createSpaceMenuItem(space, index, lastUsedSpace.id, padding);
-    })
-  );
+    const focusedWindow = getFocusedWindow();
+    const currentSpaceId = focusedWindow?.tabbedBrowserWindow?.getCurrentSpace() ?? null;
 
-  return {
-    label: "Spaces",
-    submenu: [
-      ...spaceMenuItems.filter((item) => item !== null),
-      { type: "separator" },
-      {
-        label: "Manage Spaces",
-        click: () => settings.show()
-      }
-    ]
-  };
-};
+    if (!focusedWindow?.tabbedBrowserWindow) {
+      return {
+        label: "Spaces",
+        submenu: [
+          {
+            label: "Manage Spaces",
+            click: () => settings.show()
+          }
+        ]
+      };
+    }
+
+    // Use Promise.allSettled to ensure all space menu items are attempted
+    // even if some fail to be created
+    const spaceMenuItemResults = await Promise.allSettled(
+      spaces.map((space, index) => createSpaceMenuItem(space, index, currentSpaceId))
+    );
+
+    // Filter out any rejected promises and only keep the fulfilled ones
+    const spaceMenuItems = spaceMenuItemResults
+      .filter((result): result is PromiseFulfilledResult<MenuItemConstructorOptions> => result.status === "fulfilled")
+      .map((result) => result.value);
+
+    return {
+      label: "Spaces",
+      submenu: [
+        ...spaceMenuItems,
+        { type: "separator" },
+        {
+          label: "Manage Spaces",
+          click: () => settings.show()
+        }
+      ]
+    };
+  } catch (error) {
+    console.error("Failed to create spaces menu:", error);
+    // Provide a fallback menu if the spaces menu creation fails
+    return {
+      label: "Spaces",
+      submenu: [
+        {
+          label: "Manage Spaces",
+          click: () => settings.show()
+        }
+      ]
+    };
+  }
+}
