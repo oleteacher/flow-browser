@@ -40,7 +40,7 @@ export function createTabContextMenu(
       const openLinkItems = createOpenLinkItems(parameters, createNewTab, browser);
       const linkItems = createLinkItems(defaultActions);
       const navigationItems = createNavigationItems(navigationHistory, webContents, canGoBack, canGoForward);
-      const extensionItems = createExtensionItems();
+      const extensionItems = createExtensionItems(tab, parameters);
       const textHistoryItems = createTextHistoryItems(webContents);
       const textEditItems = createTextEditItems(defaultActions, webContents);
       const selectionItems = createSelectionItems(defaultActions, parameters, createNewTab, searchEngine);
@@ -63,13 +63,11 @@ export function createTabContextMenu(
         sections.push(linkItems);
       } else if (hasLookUpSelection && parameters.selectionText.trim()) {
         sections.push([lookUpSelection]);
+      } else if (parameters.hasImageContents) {
+        sections.push(imageItems);
       } else {
         noSpecialActions = true;
         sections.push(navigationItems);
-      }
-
-      if (parameters.hasImageContents) {
-        sections.push(imageItems);
       }
 
       if (parameters.selectionText.trim() && !parameters.isEditable) {
@@ -158,9 +156,11 @@ function createNavigationItems(
   ];
 }
 
-function createExtensionItems(): Electron.MenuItemConstructorOptions[] {
-  // TODO: Add extension items
-  return [];
+function createExtensionItems(tab: Tab, parameters: Electron.ContextMenuParams): Electron.MenuItemConstructorOptions[] {
+  const extensions = tab.loadedProfile.extensions;
+  // @ts-expect-error: ts error, but still works
+  const items: Electron.MenuItemConstructorOptions[] = extensions.getContextMenuItems(tab.webContents, parameters);
+  return items;
 }
 
 function createTextHistoryItems(webContents: Electron.WebContents): Electron.MenuItemConstructorOptions[] {

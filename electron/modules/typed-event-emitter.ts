@@ -15,6 +15,10 @@ export class TypedEventEmitter<TEvents extends Record<string, any>> {
     }
   }
 
+  public isEmitterDestroyed() {
+    return this.emitterDestroyed;
+  }
+
   /**
    * Emit an event with the specified name and arguments.
    * @template TEventName The name of the event to emit.

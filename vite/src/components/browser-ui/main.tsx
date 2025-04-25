@@ -9,12 +9,16 @@ import { useState } from "react";
 import { TabsProvider, useTabs } from "@/components/providers/tabs-provider";
 import { SettingsProvider, useSettings } from "@/components/providers/settings-provider";
 import { TabDisabler } from "@/components/logic/tab-disabler";
+import { BrowserActionProvider } from "@/components/providers/browser-action-provider";
+import { ExtensionsProviderWithSpaces } from "@/components/providers/extensions-provider";
 
 export type CollapseMode = "icon" | "offcanvas";
 export type SidebarVariant = "sidebar" | "floating";
 export type SidebarSide = "left" | "right";
 
-function InternalBrowserUI({ isReady }: { isReady: boolean }) {
+export type WindowType = "main" | "popup";
+
+function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: WindowType }) {
   const { open } = useSidebar();
   const { getSetting } = useSettings();
   const { focusedTab, tabGroups } = useTabs();
@@ -44,19 +48,22 @@ function InternalBrowserUI({ isReady }: { isReady: boolean }) {
     return <BrowserContent />;
   }
 
+  const hasSidebar = type === "main";
+
   return (
     <>
       {dynamicTitle && <title>{`${dynamicTitle} | Flow`}</title>}
-      <BrowserSidebar collapseMode={sidebarCollapseMode} variant="sidebar" side="left" />
+      {hasSidebar && <BrowserSidebar collapseMode={sidebarCollapseMode} variant="sidebar" side="left" />}
       <SidebarInset className="bg-transparent">
         <div
           className={cn(
             "dark flex-1 flex p-2.5 platform-win32:pt-[calc(env(titlebar-area-y)+env(titlebar-area-height))] app-drag",
-            open && "pl-1"
+            open && hasSidebar && "pl-0.5",
+            type === "popup" && "pt-[calc(env(titlebar-area-y)+env(titlebar-area-height))]"
           )}
         >
           {/* Topbar */}
-          <div className="absolute top-0 left-0 w-full h-3 flex justify-center items-center">
+          <div className="absolute top-0 left-0 w-full h-2.5 flex justify-center items-center">
             <AnimatePresence>
               {isActiveTabLoading && (
                 <motion.div
@@ -91,7 +98,7 @@ function InternalBrowserUI({ isReady }: { isReady: boolean }) {
   );
 }
 
-export function BrowserUI() {
+export function BrowserUI({ type }: { type: WindowType }) {
   const [isReady, setIsReady] = useState(false);
 
   // No transition on first load
@@ -112,9 +119,13 @@ export function BrowserUI() {
       <TabDisabler />
       <SidebarProvider>
         <SettingsProvider>
-          <SpacesProvider>
+          <SpacesProvider windowType={type}>
             <TabsProvider>
-              <InternalBrowserUI isReady={isReady} />
+              <BrowserActionProvider>
+                <ExtensionsProviderWithSpaces>
+                  <InternalBrowserUI isReady={isReady} type={type} />
+                </ExtensionsProviderWithSpaces>
+              </BrowserActionProvider>
             </TabsProvider>
           </SpacesProvider>
         </SettingsProvider>

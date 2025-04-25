@@ -45,8 +45,8 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
     super();
 
     this.window = new BrowserWindow({
-      minWidth: 800,
-      minHeight: 400,
+      minWidth: type === "normal" ? 800 : 250,
+      minHeight: type === "normal" ? 400 : 200,
       width: 1280,
       height: 720,
       titleBarStyle: "hidden",
@@ -75,7 +75,13 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       show: false
     });
 
-    this.window.maximize();
+    const windowOptions = options.window || {};
+    const hasSizeOptions = "width" in windowOptions || "height" in windowOptions;
+    const hasPositionOptions = "x" in windowOptions || "y" in windowOptions;
+
+    if (!hasSizeOptions && !hasPositionOptions) {
+      this.window.maximize();
+    }
 
     this.window.on("enter-full-screen", () => {
       this.emit("enter-full-screen");
@@ -121,7 +127,23 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       this.destroy();
     });
 
-    this.window.loadURL("flow-internal://main/");
+    // If the window is a popup, destroy the window when there are no tabs left
+    if (type === "popup") {
+      browser.tabs.on("tab-removed", () => {
+        const windowTabs = browser.tabs.getTabsInWindow(this.id);
+        if (windowTabs.length === 0) {
+          this.destroy();
+        }
+      });
+    }
+
+    if (type === "normal") {
+      // Show normal UI
+      this.window.loadURL("flow-internal://main-ui/");
+    } else if (type === "popup") {
+      // TODO: Show popup UI
+      this.window.loadURL("flow-internal://popup-ui/");
+    }
 
     if (FLAGS.SHOW_DEBUG_DEVTOOLS) {
       setTimeout(() => {
@@ -155,12 +177,6 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       height: 0
     };
 
-    if (type === "normal") {
-      // Show normal UI
-    } else if (type === "popup") {
-      // TODO: Show popup UI
-    }
-
     getLastUsedSpace().then((space) => {
       if (space) {
         this.setCurrentSpace(space.id);
@@ -182,14 +198,24 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
 
   public sendMessageToCoreWebContents(channel: string, ...args: any[]) {
     for (const content of this.coreWebContents) {
+      if (content.isDestroyed()) continue;
       content.send(channel, ...args);
     }
   }
 
   destroy() {
     if (this.isDestroyed) {
-      throw new Error("Window already destroyed!");
+      return;
     }
+
+    // Destroy all tabs in the window
+    // Do this so that it won't run if the app is closing
+    // Technically after 500ms, the app is dead, so it won't run.
+    setTimeout(() => {
+      for (const tab of this.browser.tabs.getTabsInWindow(this.id)) {
+        tab.destroy();
+      }
+    }, 500);
 
     // Destroy the window
     this.isDestroyed = true;

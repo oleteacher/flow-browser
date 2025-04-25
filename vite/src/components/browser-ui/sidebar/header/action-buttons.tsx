@@ -1,3 +1,4 @@
+import { BrowserActionList } from "@/components/browser-ui/browser-action";
 import { SIDEBAR_HOVER_COLOR } from "@/components/browser-ui/browser-sidebar";
 import { GoBackButton, GoForwardButton } from "@/components/browser-ui/sidebar/header/navigation-buttons";
 import { RefreshCWIcon, RefreshCWIconHandle } from "@/components/icons/refresh-cw";
@@ -163,6 +164,9 @@ export function NavigationControls() {
             onClick={closeSidebar}
             className={SIDEBAR_HOVER_COLOR}
           />
+
+          {/* Browser Actions */}
+          <BrowserActionList alignmentY="bottom" alignmentX="right" />
         </SidebarMenuItem>
         {/* Right Side Buttons */}
         <SidebarMenuItem className="flex flex-row gap-0.5">

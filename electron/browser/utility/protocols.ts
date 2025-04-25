@@ -6,6 +6,8 @@ import { getContentType } from "@/modules/utils";
 import { getFavicon, normalizeURL } from "@/modules/favicons";
 import { FLAGS } from "@/modules/flags";
 import { isDevelopmentServerRunning, setupHotReloadFileDescriptors, fetchFromDevServer } from "./hot-reload";
+import { getExtensionIcon } from "@/modules/extensions/management";
+import { browser } from "@/index";
 
 protocolModule.registerSchemesAsPrivileged([
   {
@@ -27,7 +29,8 @@ interface AllowedDomains {
 }
 
 const FLOW_INTERNAL_ALLOWED_DOMAINS: AllowedDomains = {
-  main: true,
+  "main-ui": true,
+  "popup-ui": true,
   settings: true,
   omnibox: true,
   "glance-modal": true,
@@ -39,7 +42,8 @@ const FLOW_PROTOCOL_ALLOWED_DOMAINS: AllowedDomains = {
   error: true,
   "new-tab": true,
   games: true,
-  omnibox: true
+  omnibox: true,
+  extensions: true
 };
 
 const FLOW_EXTERNAL_ALLOWED_DOMAINS: AllowedDomains = {
@@ -199,6 +203,41 @@ function registerFlowProtocol(protocol: Protocol) {
     }
   };
 
+  const handleExtensionIconRequest = async (request: Request, url: URL) => {
+    const extensionId = url.searchParams.get("id");
+    const profileId = url.searchParams.get("profile");
+
+    if (!extensionId || !profileId) {
+      return new Response("Invalid request path", { status: 400 });
+    }
+
+    const loadedProfile = browser?.getLoadedProfile(profileId);
+    if (!loadedProfile) {
+      return new Response("No loaded profile found", { status: 404 });
+    }
+
+    const { extensionsManager } = loadedProfile;
+
+    const extData = extensionsManager.getExtensionDataFromCache(extensionId);
+    if (!extData) {
+      return new Response("No extension data found", { status: 404 });
+    }
+
+    const extensionPath = await extensionsManager.getExtensionPath(extensionId, extData);
+    if (!extensionPath) {
+      return new Response("No extension path found", { status: 404 });
+    }
+
+    const icon = await getExtensionIcon(extensionPath);
+    if (!icon) {
+      return new Response("Extension icon not found", { status: 404 });
+    }
+
+    return new Response(icon.toPNG(), {
+      headers: { "Content-Type": "image/png" }
+    });
+  };
+
   protocol.handle("flow", async (request) => {
     const urlString = request.url;
     const url = new URL(urlString);
@@ -211,6 +250,11 @@ function registerFlowProtocol(protocol: Protocol) {
     // flow://asset/:path
     if (url.host === "asset") {
       return await handleAssetRequest(request, url);
+    }
+
+    // flow://extension-icon/:path
+    if (url.host === "extension-icon") {
+      return await handleExtensionIconRequest(request, url);
     }
 
     // flow://:path

@@ -1,17 +1,8 @@
+import { IPCListener } from "@/lib/flow/types";
 import type { BasicSetting, BasicSettingCard } from "~/types/settings";
 
 // API //
 export interface FlowSettingsAPI {
-  /**
-   * Opens the settings window
-   */
-  open: () => void;
-
-  /**
-   * Closes the settings window
-   */
-  close: () => void;
-
   /**
    * Gets the value of a setting
    */
@@ -32,5 +23,5 @@ export interface FlowSettingsAPI {
 
   /**
    * Listens for changes to the settings */
-  onSettingsChanged: (callback: () => void) => () => void;
+  onSettingsChanged: IPCListener<[void]>;
 }

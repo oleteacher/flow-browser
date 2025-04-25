@@ -63,7 +63,12 @@ function createSession(profileId: string) {
 
   registerProtocolsWithSession(profileSession);
   registerCallbacksWithSession(profileSession);
+
   return profileSession;
+}
+
+export function getSessionWithoutCreating(profileId: string): Session | undefined {
+  return sessions.get(profileId);
 }
 
 export function getSession(profileId: string): Session {

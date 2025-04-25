@@ -80,9 +80,11 @@ export class Omnibox {
       const pedalAction = autocompleteMatch.destinationUrl;
       // Execute the pedal action
       if (pedalAction === "open_settings") {
-        flow.settings.open();
+        flow.windows.openSettingsWindow();
       } else if (pedalAction === "open_new_window") {
         flow.browser.createWindow();
+      } else if (pedalAction === "open_extensions") {
+        flow.tabs.newTab("flow://extensions", true);
       }
     } else {
       const url = autocompleteMatch.destinationUrl;
