@@ -54,6 +54,7 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Simple Onboarding**: A simple onboarding process that allows you to quickly get started.
 - **Wide Customization**: Custom icons, new page mode, and more.
 - **Offline Games**: A collection of offline games to play when you have nothing to do. (flow://games)
+- **Extensions**: Allow you to install chrome extensions from the Chrome Web Store.
 
 ## Upcoming Features
 
@@ -61,7 +62,6 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Native Adblocker**: A native adblocker that blocks ads and trackers.
 - **Topbar**: Allow you to customise between a topbar or sidebar.
 - **Downloads**: Allow you to download files from the web.
-- **Extensions**: Allow you to install chrome extensions from the Chrome Web Store.
 - **Favourites**: Allow you to add websites to your favourites.
 - **Pinned Tabs**: Allow you to pin tabs in spaces.
 - **Persist Tabs**: Allow you to persist tabs between restarts.
