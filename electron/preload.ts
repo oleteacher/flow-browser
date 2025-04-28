@@ -208,6 +208,15 @@ const interfaceAPI = {
   },
   onToggleSidebar: (callback: () => void) => {
     return listenOnIPCChannel("sidebar:on-toggle", callback);
+  },
+  setComponentWindowBounds: (componentId: string, bounds: Electron.Rectangle) => {
+    return ipcRenderer.send("interface:set-component-window-bounds", componentId, bounds);
+  },
+  setComponentWindowZIndex: (componentId: string, zIndex: number) => {
+    return ipcRenderer.send("interface:set-component-window-z-index", componentId, zIndex);
+  },
+  setComponentWindowVisible: (componentId: string, visible: boolean) => {
+    return ipcRenderer.send("interface:set-component-window-visible", componentId, visible);
   }
 };
 
@@ -290,6 +299,9 @@ const appAPI = {
   },
   getPlatform: () => {
     return process.platform;
+  },
+  writeTextToClipboard: (text: string) => {
+    return ipcRenderer.send("app:write-text-to-clipboard", text);
   }
 };
 

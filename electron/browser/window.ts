@@ -1,5 +1,4 @@
 import { Browser } from "@/browser/browser";
-import { GlanceModal } from "@/browser/components/glance-modal";
 import { Omnibox } from "@/browser/components/omnibox";
 import { ViewManager } from "@/browser/view-manager";
 import { PageBounds } from "@/ipc/browser/page";
@@ -10,6 +9,7 @@ import { BrowserWindow, nativeTheme, WebContents } from "electron";
 import "./close-preventer";
 import { WindowEventType } from "@/modules/windows";
 import { windowEvents } from "@/modules/windows";
+import { initializePortalComponentWindows } from "@/browser/components/portal-component-windows";
 
 type BrowserWindowType = "normal" | "popup";
 
@@ -31,7 +31,6 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
   public viewManager: ViewManager;
   public coreWebContents: WebContents[];
 
-  public glanceModal: GlanceModal;
   public omnibox: Omnibox;
 
   private browser: Browser;
@@ -74,6 +73,11 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       // Show after ready
       show: false
     });
+
+    // Hide the window buttons before the component is mounted
+    if ("setWindowButtonVisibility" in this.window) {
+      this.window.setWindowButtonVisibility(false);
+    }
 
     const windowOptions = options.window || {};
     const hasSizeOptions = "width" in windowOptions || "height" in windowOptions;
@@ -160,10 +164,6 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
 
     this.viewManager = new ViewManager(this.window.contentView);
 
-    this.glanceModal = new GlanceModal();
-    this.viewManager.addOrUpdateView(this.glanceModal.view, 1);
-    this.coreWebContents.push(this.glanceModal.view.webContents);
-
     this.omnibox = new Omnibox(this.window);
     this.viewManager.addOrUpdateView(this.omnibox.view, 999);
     this.coreWebContents.push(this.omnibox.webContents);
@@ -182,6 +182,8 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
         this.setCurrentSpace(space.id);
       }
     });
+
+    initializePortalComponentWindows(this);
   }
 
   setCurrentSpace(spaceId: string) {
@@ -226,7 +228,6 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
     const windowDestroyed = this.window.isDestroyed();
     this.viewManager.destroy(windowDestroyed);
 
-    this.glanceModal.destroy();
     this.omnibox.destroy();
 
     if (!windowDestroyed) {
