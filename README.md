@@ -3,7 +3,7 @@
 A modern, tabbed web browser with Chrome extension support—built on Electron.
 
 <p align="center">
-  <img src="./electron/assets/AppIcon.png" width="128" height="128" alt="Flow Browser Logo" />
+  <img src="./build/icon.png" width="128" height="128" alt="Flow Browser Logo" />
 </p>
 
 [![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
@@ -38,11 +38,11 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 
 ## Screenshots
 
-![Onboarding - macOS](./assets/screenshots/beta-onboarding-1.png)
-![Browser - macOS](./assets/screenshots/beta-browser-1.png)
-![Command - macOS](./assets/screenshots/beta-command-1.png)
-![New Tab - macOS](./assets/screenshots/beta-newtab-1.png)
-![Settings - macOS](./assets/screenshots/beta-settings-1.png)
+![Onboarding - macOS](./docs/assets/screenshots/beta-onboarding-1.png)
+![Browser - macOS](./docs/assets/screenshots/beta-browser-1.png)
+![Command - macOS](./docs/assets/screenshots/beta-command-1.png)
+![New Tab - macOS](./docs/assets/screenshots/beta-newtab-1.png)
+![Settings - macOS](./docs/assets/screenshots/beta-settings-1.png)
 
 ## Features
 
@@ -55,6 +55,7 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Wide Customization**: Custom icons, new page mode, and more.
 - **Offline Games**: A collection of offline games to play when you have nothing to do. (flow://games)
 - **Extensions**: Allow you to install chrome extensions from the Chrome Web Store.
+- **Persist Tabs**: Allow you to persist tabs between restarts.
 
 ## Upcoming Features
 
@@ -64,7 +65,6 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Downloads**: Allow you to download files from the web.
 - **Favourites**: Allow you to add websites to your favourites.
 - **Pinned Tabs**: Allow you to pin tabs in spaces.
-- **Persist Tabs**: Allow you to persist tabs between restarts.
 - **Sleep Tabs**: Allow you to put tabs to sleep to save resources.
 - **Custom Search Engines**: Allow you to add custom search engines.
 - **Preview Tabs**: Allow you to preview tabs before switching to them.

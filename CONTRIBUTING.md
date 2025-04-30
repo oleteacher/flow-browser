@@ -1,11 +1,14 @@
 # Contributing to Flow Browser
 
-## Monorepo Parts
+## Project Structure
 
-| Name         | Description                   |
-| ------------ | ----------------------------- |
-| **electron** | The main electron application |
-| **vite**     | Frontend for the browser      |
+| Directory        | Description                                  |
+| ---------------- | -------------------------------------------- |
+| **src/main**     | Electron main process code                   |
+| **src/renderer** | Frontend React application                   |
+| **src/preload**  | Preload scripts for secure IPC communication |
+| **src/shared**   | Code shared between main and renderer        |
+| **docs**         | Documentation and guides                     |
 
 ## Prerequisites
 
@@ -25,12 +28,20 @@
 git clone https://github.com/MultiboxLabs/flow-browser.git
 cd flow-browser
 
-# Install dependencies and launch the browser
+# Install dependencies
 bun install
+
+# Start the application in Preview Mode
 bun start
+
+# Development with hot reloading
+bun dev
+
+# Development with file watching (Recommended)
+bun dev:watch
 ```
 
-For development with hot reloading, see the [Hot Reloading Guide](./docs/contributing/hot-reloading.md).
+For more detailed development info, see the [contributing documentation](./docs/contributing/).
 
 ## Using Extensions
 
@@ -39,19 +50,22 @@ For development with hot reloading, see the [Hot Reloading Guide](./docs/contrib
 1. Navigate to the [Chrome Web Store](https://chromewebstore.google.com/)
 2. Browse and install extensions directly from the store
 
-### Local Extensions
-
-Refer to the [Local Extensions](./extensions/README.md) documentation for more information.
-
 ## Building
 
-You can use `bun build` to build the application.
+There are different commands to build the application for different platforms.
 
-The result will be in the `./electron/out` folder.
+```bash
+bun build:win    # Windows
+bun build:mac    # macOS
+bun build:linux  # Linux
+```
+
+The build output will be in the `./dist` directory.
 
 ## Technology Stack
 
-- **Frontend**: React 19, Tailwind CSS, Motion
-- **Routing**: TanStack Router
-- **Build Tools**: Vite, TypeScript, Bun
+- **Frontend**: React 19, TailwindCSS
+- **Animation**: Motion (imported from "motion/react")
+- **UI Components**: Radix UI
+- **Build Tools**: Electron Builder, electron-vite, Vite, TypeScript
 - **Runtime**: Electron 35 (Chromium)

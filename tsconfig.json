@@ -1,11 +1,4 @@
 {
-  "compilerOptions": {
-    "lib": ["DOM", "ES2024"],
-    "module": "NodeNext",
-    "target": "ES2024",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
-  }
+  "files": [],
+  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
 }

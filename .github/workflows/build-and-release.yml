@@ -1,0 +1,65 @@
+name: Build & Release App
+
+permissions:
+  contents: write
+
+on:
+  # Builds the app when a new tag is created
+  push:
+    tags:
+      - "v*"
+
+run-name: Release ${{ github.ref_name }}
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js, NPM and Yarn
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Build Dependencies (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak-builder elfutils dpkg fakeroot
+
+      - name: Setup Flatpak (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Dependencies
+        run: bun install --development --frozen-lockfile
+
+      - name: Build for Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: bun run build:linux -p always
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build for macOS
+        if: matrix.os == 'macos-latest'
+        run: bun run build:mac -p always
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build for Windows
+        if: matrix.os == 'windows-latest'
+        run: bun run build:win -p always
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
