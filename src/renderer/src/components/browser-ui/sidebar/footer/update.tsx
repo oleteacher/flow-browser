@@ -77,6 +77,7 @@ export function SidebarFooterUpdate() {
               ease: [0.34, 1.56, 0.64, 1], // Custom spring-like curve
               scale: { type: "spring", stiffness: 300, damping: 15 }
             }}
+            className="outline-none"
           >
             <Card
               onClick={() => setExpanded(!expanded)}
@@ -84,7 +85,7 @@ export function SidebarFooterUpdate() {
                 "py-1 gap-0",
                 "bg-gray-100/80 dark:bg-white/10",
                 "border-gray-200 dark:border-border",
-                "cursor-pointer overflow-hidden",
+                "cursor-pointer overflow-hidden outline-none",
                 "shadow-sm hover:shadow-md transition-shadow"
               )}
             >
