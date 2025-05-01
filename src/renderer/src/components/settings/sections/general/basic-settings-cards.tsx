@@ -5,8 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { ResetOnboardingCard } from "@/components/settings/sections/general/reset-onboarding-card";
+import { UpdateCard } from "@/components/settings/sections/general/update-card";
 
-function SettingsInput({ setting }: { setting: BasicSetting }) {
+export function SettingsInput({ setting }: { setting: BasicSetting }) {
   const { getSetting, setSetting } = useSettings();
 
   const handleSettingChange = (value: BasicSetting["defaultValue"]) => {
@@ -42,6 +44,14 @@ function SettingsInput({ setting }: { setting: BasicSetting }) {
 export function BasicSettingsCard({ card, transparent }: { card: BasicSettingCard; transparent?: boolean }) {
   const { settings } = useSettings();
 
+  // Internal Cards
+  if (card.title === "INTERNAL_UPDATE") {
+    return <UpdateCard />;
+  } else if (card.title === "INTERNAL_ONBOARDING") {
+    return <ResetOnboardingCard />;
+  }
+
+  // Regular Cards
   return (
     <Card className={cn("remove-app-drag", transparent && "bg-white/10 backdrop-blur-md border border-white/20")}>
       <CardHeader>
