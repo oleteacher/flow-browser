@@ -15,19 +15,39 @@
   ],
   "protocols": [
     {
-      "name": "http URLs",
+      "name": "HyperText Transfer Protocol",
       "schemes": ["http", "https"]
     }
   ],
   "fileAssociations": [
+    {
+      "ext": "htm",
+      "name": "HyperText Markup File",
+      "role": "Viewer"
+    },
     {
       "ext": "html",
       "description": "HTML Document",
       "role": "Viewer"
     },
     {
+      "ext": "mhtml",
+      "description": "MHTML Document",
+      "role": "Viewer"
+    },
+    {
+      "ext": "shtml",
+      "name": "HyperText Markup File",
+      "role": "Viewer"
+    },
+    {
       "ext": "xhtml",
-      "description": "XHTML Document",
+      "name": "Extensible HyperText Markup File",
+      "role": "Viewer"
+    },
+    {
+      "ext": "xhtm",
+      "name": "Extensible HyperText Markup File",
       "role": "Viewer"
     },
     {
@@ -38,7 +58,8 @@
   ],
   "asarUnpack": ["assets/**"],
   "win": {
-    "executableName": "flow"
+    "executableName": "flow",
+    "verifyUpdateCodeSignature": false
   },
   "nsis": {
     "artifactName": "${name}-${version}-setup.${ext}",
@@ -47,6 +68,7 @@
     "createDesktopShortcut": "always"
   },
   "mac": {
+    "category": "public.app-category.productivity",
     "entitlementsInherit": "build/entitlements.mac.plist",
     "notarize": false
   },

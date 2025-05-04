@@ -128,7 +128,7 @@ export const BasicSettingCards: BasicSettingCard[] = [
   {
     title: "General Settings",
     subtitle: "General settings for the application",
-    settings: ["autoUpdate"]
+    settings: ["autoUpdate", "internal_setAsDefaultBrowser"]
   },
 
   // Update Card (Internal)
@@ -145,7 +145,7 @@ export const BasicSettingCards: BasicSettingCard[] = [
     settings: ["newTabMode"]
   },
 
-  // Sidebar Collapse Mode Card
+  // Sidebar Settings Card
   {
     title: "Sidebar Settings",
     subtitle: "Choose how the sidebar should behave",
