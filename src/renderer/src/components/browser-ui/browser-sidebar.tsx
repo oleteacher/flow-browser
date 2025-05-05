@@ -217,7 +217,7 @@ export function BrowserSidebar({ collapseMode, variant, side, setIsHoveringSideb
     "select-none",
     "!border-0",
     "*:bg-transparent",
-    variant === "floating" && "!w-full !flex *:bg-space-background-start"
+    variant === "floating" && "!w-full !flex *:dimmed-space-background-start"
   );
 
   // Rail class names
