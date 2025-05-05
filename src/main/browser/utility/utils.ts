@@ -24,3 +24,7 @@ export function isDefined<T>(value: T | null | undefined): value is T {
 export function generateID(): string {
   return randomUUID().split("-")[0];
 }
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

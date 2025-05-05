@@ -1,10 +1,15 @@
 import { BrowserWindow, nativeTheme } from "electron";
 import { registerWindow, WindowType } from "@/modules/windows";
 import { FLAGS } from "@/modules/flags";
+import { defaultSessionReady } from "@/browser/utility/protocols";
 
 let onboardingWindow: BrowserWindow | null = null;
 
-function createOnboardingWindow() {
+async function createOnboardingWindow() {
+  // wait for the default session to be ready so it can use flow-internal protocol
+  await defaultSessionReady;
+
+  // create the window
   const window = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -38,7 +43,8 @@ function createOnboardingWindow() {
     }, 0);
   }
 
-  return new Promise((resolve) => {
+  window.hide();
+  return await new Promise((resolve) => {
     window.once("ready-to-show", () => {
       resolve(window);
     });

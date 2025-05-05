@@ -10,6 +10,7 @@ import "./close-preventer";
 import { WindowEventType } from "@/modules/windows";
 import { windowEvents } from "@/modules/windows";
 import { initializePortalComponentWindows } from "@/browser/components/portal-component-windows";
+import { defaultSessionReady } from "@/browser/utility/protocols";
 
 type BrowserWindowType = "normal" | "popup";
 
@@ -118,6 +119,7 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       }
     });
 
+    this.window.hide();
     this.window.once("ready-to-show", () => {
       this.window.show();
       this.window.focus();
@@ -141,21 +143,23 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       });
     }
 
-    if (type === "normal") {
-      // Show normal UI
-      this.window.loadURL("flow-internal://main-ui/");
-    } else if (type === "popup") {
-      // TODO: Show popup UI
-      this.window.loadURL("flow-internal://popup-ui/");
-    }
+    defaultSessionReady.then(() => {
+      if (type === "normal") {
+        // Show normal UI
+        this.window.loadURL("flow-internal://main-ui/");
+      } else if (type === "popup") {
+        // Show popup UI
+        this.window.loadURL("flow-internal://popup-ui/");
+      }
 
-    if (FLAGS.SHOW_DEBUG_DEVTOOLS) {
-      setTimeout(() => {
-        this.window.webContents.openDevTools({
-          mode: "detach"
-        });
-      }, 0);
-    }
+      if (FLAGS.SHOW_DEBUG_DEVTOOLS) {
+        setTimeout(() => {
+          this.window.webContents.openDevTools({
+            mode: "detach"
+          });
+        }, 0);
+      }
+    });
 
     this.id = this.window.id;
     this.type = type;

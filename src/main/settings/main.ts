@@ -1,9 +1,14 @@
 import { BrowserWindow, nativeTheme } from "electron";
 import { registerWindow, WindowType } from "@/modules/windows";
+import { defaultSessionReady } from "@/browser/utility/protocols";
 
 let settingsWindow: BrowserWindow | null = null;
 
-function createSettingsWindow() {
+async function createSettingsWindow() {
+  // wait for the default session to be ready so it can use flow-internal protocol
+  await defaultSessionReady;
+
+  // create the window
   const window = new BrowserWindow({
     width: 800,
     minWidth: 800,
@@ -30,7 +35,8 @@ function createSettingsWindow() {
   registerWindow(WindowType.SETTINGS, "settings", window);
   settingsWindow = window;
 
-  return new Promise((resolve) => {
+  window.hide();
+  return await new Promise((resolve) => {
     window.once("ready-to-show", () => {
       resolve(window);
     });

@@ -8,6 +8,7 @@ import { FLAGS } from "@/modules/flags";
 import { isDevelopmentServerRunning, setupHotReloadFileDescriptors, fetchFromDevServer } from "./hot-reload";
 import { getExtensionIcon } from "@/modules/extensions/management";
 import { browser } from "@/index";
+import { sleep } from "@/browser/utility/utils";
 
 protocolModule.registerSchemesAsPrivileged([
   {
@@ -321,7 +322,7 @@ export function registerProtocolsWithSession(session: Session) {
   bypassCORS(session);
 }
 
-app.whenReady().then(() => {
+export const defaultSessionReady = app.whenReady().then(async () => {
   const defaultSession = session.defaultSession;
 
   registerProtocolsWithSession(defaultSession);
@@ -334,4 +335,7 @@ app.whenReady().then(() => {
   });
 
   bypassCORS(defaultSession);
+
+  // wait for 50 ms before returning
+  return await sleep(50);
 });
