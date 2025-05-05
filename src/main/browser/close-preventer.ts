@@ -1,7 +1,7 @@
 // Prevent Ctrl+W on Windows from closing the entire window
 // So we can process it ourselves by closing the focused tab.
 
-import { type WebContents, webContents } from "electron";
+import { app, type WebContents, webContents } from "electron";
 import { menuCloseTab } from "./utility/menu/items/view";
 import { browser } from "@/index";
 
@@ -34,7 +34,7 @@ function scan() {
 
 if (enabled) {
   scan();
-  setInterval(() => {
-    scan();
-  }, 100);
+  app.on("web-contents-created", (_event, webContents) => {
+    newWebContents(webContents);
+  });
 }
