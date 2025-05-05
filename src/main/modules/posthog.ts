@@ -17,6 +17,15 @@ async function getAnonUserId() {
   return anonUserId;
 }
 
+getAnonUserId().then((anonUserId) => {
+  client.identify({
+    distinctId: anonUserId,
+    properties: {
+      ...getAppInfoForPosthog()
+    }
+  });
+});
+
 function getAppInfoForPosthog() {
   return {
     version: app.getVersion(),
