@@ -24,7 +24,6 @@ setPartitionSessionGrabber(partitionSessionGrabber);
 // Register CRX protocol in default session
 app.whenReady().then(() => {
   protocol.handle("crx", async (request) => {
-    // @ts-ignore: URL.parse should work, but tsc thinks it doesn't
     const url = URL.parse(request.url);
 
     if (!url) {

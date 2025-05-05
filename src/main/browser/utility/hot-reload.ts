@@ -55,7 +55,6 @@ export async function fetchFromDevServer(path: string, request?: Request): Promi
   const url = new URL(`${ELECTRON_RENDERER_BASE_URL_STRING}${path}`);
 
   if (request?.url) {
-    // @ts-ignore: URL.parse should work, but tsc thinks it doesn't
     const reqURL = URL.parse(request?.url);
     if (reqURL) {
       url.search = reqURL.search;
