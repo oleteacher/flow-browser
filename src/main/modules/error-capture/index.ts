@@ -5,12 +5,15 @@ import { addUncaughtExceptionListener, addUnhandledRejectionListener } from "./a
 import { propertiesFromUnknownInput } from "./error-conversion";
 import { EventMessage, PostHog, PostHogOptions } from "posthog-node";
 import { randomUUID } from "crypto";
+import { createStackParser } from "@/modules/error-capture/stack-parser";
 
 const SHUTDOWN_TIMEOUT = 2000;
 
 export default class ErrorTracking {
   private client: PostHog;
   private _exceptionAutocaptureEnabled: boolean;
+
+  private fallbackDistinctId?: string;
 
   static stackParser: StackParser;
   static frameModifiers: StackFrameModifierFn[];
@@ -42,9 +45,10 @@ export default class ErrorTracking {
     });
   }
 
-  constructor(client: PostHog, options: PostHogOptions) {
+  constructor(client: PostHog, options: PostHogOptions & { fallbackDistinctId?: string }) {
     this.client = client;
     this._exceptionAutocaptureEnabled = options.enableExceptionAutocapture || false;
+    this.fallbackDistinctId = options.fallbackDistinctId;
 
     this.startAutocaptureIfEnabled();
   }
@@ -57,7 +61,7 @@ export default class ErrorTracking {
   }
 
   private onException(exception: unknown, hint: EventHint): void {
-    ErrorTracking.captureException(this.client, exception, hint);
+    ErrorTracking.captureException(this.client, exception, hint, this.fallbackDistinctId);
   }
 
   private async onFatalError(): Promise<void> {
@@ -68,3 +72,6 @@ export default class ErrorTracking {
     return !this.client.isDisabled && this._exceptionAutocaptureEnabled;
   }
 }
+
+ErrorTracking.stackParser = createStackParser();
+ErrorTracking.frameModifiers = [];
