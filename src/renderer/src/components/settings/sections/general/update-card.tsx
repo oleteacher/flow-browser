@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { AlertCircle, ArrowUpCircle, Download, ExternalLink, RefreshCw } from "lucide-react";
 import { useAppUpdates } from "@/components/providers/app-updates-provider";
 
-const DOWNLOAD_PAGE = "https://github.com/multiboxlabs/flow-browser/";
+const DOWNLOAD_PAGE = "https://flow-browser.com/download/";
 
 interface UpdateState {
   currentVersion: string;
