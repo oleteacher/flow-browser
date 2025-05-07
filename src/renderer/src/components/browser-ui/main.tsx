@@ -156,7 +156,7 @@ export function BrowserUI({ type }: { type: WindowType }) {
     <div
       className={cn(
         "w-screen h-screen",
-        "bg-gradient-to-br from-space-background-start/50 to-space-background-end/50",
+        "bg-gradient-to-br from-space-background-start/75 to-space-background-end/75",
         isReady && "transition-colors duration-300"
       )}
     >
