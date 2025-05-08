@@ -15,7 +15,7 @@ async function createOnboardingWindow() {
     height: 700,
     resizable: false,
     center: true,
-    show: false,
+    show: true,
     frame: false,
     titleBarStyle: "hidden",
     titleBarOverlay: {
@@ -42,13 +42,6 @@ async function createOnboardingWindow() {
       });
     }, 0);
   }
-
-  window.hide();
-  return await new Promise((resolve) => {
-    window.once("ready-to-show", () => {
-      resolve(window);
-    });
-  });
 }
 
 export const onboarding = {
@@ -58,7 +51,6 @@ export const onboarding = {
     }
 
     if (!onboardingWindow) return;
-
     onboardingWindow.show();
     onboardingWindow.focus();
   },
