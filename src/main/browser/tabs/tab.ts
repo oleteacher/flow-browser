@@ -214,29 +214,31 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     // Restore navigation history
     const restoreNavHistory = navHistory.length > 0;
     if (restoreNavHistory) {
-      const restoringEntries = [...navHistory];
-      let restoringIndex = navHistoryIndex;
+      setImmediate(() => {
+        const restoringEntries = [...navHistory];
+        let restoringIndex = navHistoryIndex;
 
-      // Put to sleep if requested
-      if (asleep) {
-        this.putToSleep(true);
-      }
+        // Put to sleep if requested
+        if (asleep) {
+          this.putToSleep(true);
+        }
 
-      // Add sleep mode entry if asleep to avoid going to the URL
-      if (asleep) {
-        const newIndex = navHistoryIndex !== undefined ? navHistoryIndex + 1 : restoringEntries.length - 1;
+        // Add sleep mode entry if asleep to avoid going to the URL
+        if (asleep) {
+          const newIndex = navHistoryIndex !== undefined ? navHistoryIndex + 1 : restoringEntries.length - 1;
 
-        restoringEntries.splice(newIndex, 0, {
-          url: SLEEP_MODE_URL,
-          title: ""
+          restoringEntries.splice(newIndex, 0, {
+            url: SLEEP_MODE_URL,
+            title: ""
+          });
+
+          restoringIndex = newIndex;
+        }
+
+        this.webContents.navigationHistory.restore({
+          entries: restoringEntries,
+          index: restoringIndex
         });
-
-        restoringIndex = newIndex;
-      }
-
-      this.webContents.navigationHistory.restore({
-        entries: restoringEntries,
-        index: restoringIndex
       });
     }
 
