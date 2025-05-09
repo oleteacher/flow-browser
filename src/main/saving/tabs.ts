@@ -24,6 +24,11 @@ export async function persistTabToStorage(tab: Tab) {
 
   const uniqueId = tab.uniqueId;
   const tabData = getTabData(tab);
+
+  // Do NOT save sleep tabs
+  if (tab.navHistory.find((entry) => entry.url === SLEEP_MODE_URL)) return;
+
+  // Save the tab data
   return await TabsDataStore.set(uniqueId, tabData)
     .then(() => true)
     .catch(() => false);

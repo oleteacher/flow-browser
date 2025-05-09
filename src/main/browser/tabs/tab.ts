@@ -214,16 +214,30 @@ export class Tab extends TypedEventEmitter<TabEvents> {
     // Restore navigation history
     const restoreNavHistory = navHistory.length > 0;
     if (restoreNavHistory) {
-      this.webContents.navigationHistory
-        .restore({
-          entries: navHistory,
-          index: navHistoryIndex
-        })
-        .then(() => {
-          if (asleep) {
-            this.putToSleep();
-          }
+      const restoringEntries = [...navHistory];
+      let restoringIndex = navHistoryIndex;
+
+      // Put to sleep if requested
+      if (asleep) {
+        this.putToSleep(true);
+      }
+
+      // Add sleep mode entry if asleep to avoid going to the URL
+      if (asleep) {
+        const newIndex = navHistoryIndex !== undefined ? navHistoryIndex + 1 : restoringEntries.length - 1;
+
+        restoringEntries.splice(newIndex, 0, {
+          url: SLEEP_MODE_URL,
+          title: ""
         });
+
+        restoringIndex = newIndex;
+      }
+
+      this.webContents.navigationHistory.restore({
+        entries: restoringEntries,
+        index: restoringIndex
+      });
     }
 
     // Restore states
@@ -551,16 +565,18 @@ export class Tab extends TypedEventEmitter<TabEvents> {
   /**
    * Puts the tab to sleep
    */
-  public putToSleep() {
+  public putToSleep(alreadyLoadedURL: boolean = false) {
     if (this.asleep) return;
 
     this.updateStateProperty("asleep", true);
 
-    // Save current state (To be safe)
-    this.updateTabState();
+    if (!alreadyLoadedURL) {
+      // Save current state (To be safe)
+      this.updateTabState();
 
-    // Load about:blank to save resources
-    this.loadURL(SLEEP_MODE_URL);
+      // Load about:blank to save resources
+      this.loadURL(SLEEP_MODE_URL);
+    }
   }
 
   /**
@@ -578,6 +594,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       navigationHistory.goBack();
       setTimeout(() => {
         navigationHistory.removeEntryAtIndex(activeIndex);
+        this.updateTabState();
       }, 100);
     }
 
