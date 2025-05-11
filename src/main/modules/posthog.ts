@@ -3,10 +3,12 @@ import { SettingsDataStore } from "@/saving/settings";
 import { app } from "electron";
 import { PostHog } from "posthog-node";
 
+const enableExceptionAutocapture = app.isPackaged;
+
 const client = new PostHog("phc_P8uPRRW5eJj8vMmgMlsgoOmmeNZ9NxBHN6COZQndvfZ", {
   host: "https://eu.i.posthog.com",
   disableGeoip: false,
-  enableExceptionAutocapture: false
+  enableExceptionAutocapture
 });
 
 // Anonymous ID
