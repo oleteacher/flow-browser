@@ -130,6 +130,7 @@ const handleOpenUrl = async (url: string) => {
   const tab = await browser.tabs.createTab(window.id);
   tab.loadURL(url);
   browser.tabs.setActiveTab(tab);
+  window.window.focus();
 };
 
 function initializeApp() {
