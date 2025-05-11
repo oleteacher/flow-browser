@@ -90,5 +90,8 @@
     "provider": "github",
     "owner": "multiboxlabs",
     "releaseType": "prerelease"
-  }
+  },
+  "electronDist": "node_modules/electron/dist",
+  "afterPack": "./build/hooks/afterPack.js",
+  "afterSign": "./build/hooks/afterSign.js"
 }
