@@ -56,16 +56,16 @@ Choose the file you need and [download from GitHub Releases](https://github.com/
 - **Offline Games**: A collection of offline games to play when you have nothing to do. (flow://games)
 - **Extensions**: Allow you to install chrome extensions from the Chrome Web Store.
 - **Persist Tabs**: Allow you to persist tabs between restarts.
+- **Native Adblocker**: A native adblocker that blocks ads and trackers.
+- **Sleep Tabs**: Allow you to put tabs to sleep to save resources.
 
 ## Upcoming Features
 
 - **Reorder Tabs**: Allow you to reorder tabs.
-- **Native Adblocker**: A native adblocker that blocks ads and trackers.
 - **Topbar**: Allow you to customise between a topbar or sidebar.
 - **Downloads**: Allow you to download files from the web.
 - **Favourites**: Allow you to add websites to your favourites.
 - **Pinned Tabs**: Allow you to pin tabs in spaces.
-- **Sleep Tabs**: Allow you to put tabs to sleep to save resources.
 - **Custom Search Engines**: Allow you to add custom search engines.
 - **Preview Tabs**: Allow you to preview tabs before switching to them.
 - **Widewine Support**: Allow you to watch DRM protected content.
