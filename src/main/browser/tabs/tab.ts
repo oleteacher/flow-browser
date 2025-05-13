@@ -395,6 +395,14 @@ export class Tab extends TypedEventEmitter<TabEvents> {
       }
     });
 
+    // Handle devtools open url
+    webContents.on("devtools-open-url", (_event, url) => {
+      this.tabManager.createTab(this.window.id, this.profileId, undefined).then((tab) => {
+        tab.loadURL(url);
+        this.tabManager.setActiveTab(tab);
+      });
+    });
+
     // Handle content state changes
     const updateEvents = [
       "audio-state-changed", // audible
@@ -748,7 +756,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
         });
       } else {
         // This function must be self-contained: it runs in the actual tab's context
-        const enterPiP = async function (tabId: number) {
+        const enterPiP = async function () {
           const videos = Array.from(document.querySelectorAll("video")).filter(
             (video) => !video.paused && !video.ended && video.readyState > 2
           );
@@ -760,8 +768,13 @@ export class Tab extends TypedEventEmitter<TabEvents> {
               await video.requestPictureInPicture();
 
               const onLeavePiP = () => {
-                // @ts-expect-error: Flow APIs will be available
-                flow.tabs.disablePictureInPicture(tabId);
+                // little hack to check if they clicked back to tab or closed PiP
+                //  when going back to tab, the video will continue playing
+                //  when closing PiP, the video will pause
+                setTimeout(() => {
+                  const goBackToTab = !video.paused && !video.ended;
+                  flow.tabs.disablePictureInPicture(goBackToTab);
+                }, 50);
                 video.removeEventListener("leavepictureinpicture", onLeavePiP);
               };
 
@@ -776,7 +789,7 @@ export class Tab extends TypedEventEmitter<TabEvents> {
         };
 
         const enteredPiPPromise = this.webContents
-          .executeJavaScript(`(${enterPiP})(${this.id})`, true)
+          .executeJavaScript(`(${enterPiP})()`, true)
           .then((res) => {
             return res === true;
           })

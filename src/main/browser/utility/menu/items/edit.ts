@@ -1,8 +1,9 @@
-import { clipboard, MenuItemConstructorOptions } from "electron";
-import { Browser } from "@/browser/browser";
-import { getFocusedWindowData, getTabWc } from "../helpers";
+import { MenuItemConstructorOptions } from "electron";
+import { getFocusedWindowData } from "../helpers";
+import { fireCopyLinkAction } from "@/ipc/app/actions";
+import { getCurrentShortcut } from "@/modules/shortcuts";
 
-export const createEditMenu = (browser: Browser): MenuItemConstructorOptions => ({
+export const createEditMenu = (): MenuItemConstructorOptions => ({
   label: "Edit",
   submenu: [
     { role: "undo" },
@@ -12,19 +13,13 @@ export const createEditMenu = (browser: Browser): MenuItemConstructorOptions => 
     { role: "copy" },
     {
       label: "Copy URL",
-      accelerator: "CmdOrCtrl+Shift+C",
+      accelerator: getCurrentShortcut("tab.copyUrl"),
       click: () => {
         const winData = getFocusedWindowData();
         if (!winData) return;
+        if (!winData.tabbedBrowserWindow) return;
 
-        const tabWc = getTabWc(browser, winData);
-        if (!tabWc) return;
-
-        const url = tabWc.getURL();
-        if (!url) return;
-
-        clipboard.writeText(url);
-        // TODO: Show notification to user that the URL has been copied
+        return fireCopyLinkAction(winData.tabbedBrowserWindow);
       }
     },
     { role: "paste" },

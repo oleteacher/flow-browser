@@ -11,7 +11,8 @@ import type { SpaceData } from "@/sessions/spaces";
 
 // SHARED TYPES //
 import type { SharedExtensionData } from "~/types/extensions";
-import { WindowTabsData } from "~/types/tabs";
+import type { WindowTabsData } from "~/types/tabs";
+import type { UpdateStatus } from "~/types/updates";
 
 // API TYPES //
 import { FlowBrowserAPI } from "~/flow/interfaces/browser/browser";
@@ -31,7 +32,8 @@ import { FlowWindowsAPI } from "~/flow/interfaces/app/windows";
 import { FlowExtensionsAPI } from "~/flow/interfaces/app/extensions";
 import { FlowTabsAPI } from "~/flow/interfaces/browser/tabs";
 import { FlowUpdatesAPI } from "~/flow/interfaces/app/updates";
-import { UpdateStatus } from "~/types/updates";
+import { FlowActionsAPI } from "~/flow/interfaces/app/actions";
+import { FlowShortcutsAPI, ShortcutsData } from "~/flow/interfaces/app/shortcuts";
 
 // API CHECKS //
 function isProtocol(protocol: string) {
@@ -42,7 +44,7 @@ function isLocation(protocol: string, hostname: string) {
   return location.protocol === protocol && location.hostname === hostname;
 }
 
-type Permission = "app" | "browser" | "session" | "settings";
+type Permission = "all" | "app" | "browser" | "session" | "settings";
 
 function hasPermission(permission: Permission) {
   const isFlowProtocol = isProtocol("flow:");
@@ -65,6 +67,8 @@ function hasPermission(permission: Permission) {
   const isExtensions = isLocation("flow:", "extensions");
 
   switch (permission) {
+    case "all":
+      return true;
     case "app":
       return isInternalProtocols || isExtensions;
     case "browser":
@@ -185,9 +189,6 @@ const tabsAPI: FlowTabsAPI = {
   switchToTab: async (tabId: number) => {
     return ipcRenderer.invoke("tabs:switch-to-tab", tabId);
   },
-  newTab: async (url?: string, isForeground?: boolean, spaceId?: string) => {
-    return ipcRenderer.invoke("tabs:new-tab", url, isForeground, spaceId);
-  },
   closeTab: async (tabId: number) => {
     return ipcRenderer.invoke("tabs:close-tab", tabId);
   },
@@ -196,10 +197,15 @@ const tabsAPI: FlowTabsAPI = {
     return ipcRenderer.send("tabs:show-context-menu", tabId);
   },
 
+  // Special Exception: This is allowed for all internal protocols.
+  newTab: async (url?: string, isForeground?: boolean, spaceId?: string) => {
+    return ipcRenderer.invoke("tabs:new-tab", url, isForeground, spaceId);
+  },
+
   // Special Exception: This is allowed on every tab, but very tightly secured.
   // It will only work if the tab is currently in Picture-in-Picture mode.
-  disablePictureInPicture: async () => {
-    return ipcRenderer.invoke("tabs:disable-picture-in-picture");
+  disablePictureInPicture: async (goBackToTab: boolean) => {
+    return ipcRenderer.invoke("tabs:disable-picture-in-picture", goBackToTab);
   }
 };
 
@@ -462,18 +468,47 @@ const updatesAPI: FlowUpdatesAPI = {
   }
 };
 
+// ACTIONS API //
+const actionsAPI: FlowActionsAPI = {
+  onCopyLink: (callback: () => void) => {
+    return listenOnIPCChannel("actions:on-copy-link", callback);
+  },
+  onIncomingAction: (callback: (action: string) => void) => {
+    return listenOnIPCChannel("actions:on-incoming", callback);
+  }
+};
+
+// SHORTCUTS API //
+const shortcutsAPI: FlowShortcutsAPI = {
+  getShortcuts: async () => {
+    return ipcRenderer.invoke("shortcuts:get-all");
+  },
+  setShortcut: async (actionId: string, shortcut: string) => {
+    return ipcRenderer.invoke("shortcuts:set", actionId, shortcut);
+  },
+  resetShortcut: async (actionId: string) => {
+    return ipcRenderer.invoke("shortcuts:reset", actionId);
+  },
+  onShortcutsUpdated: (callback: (shortcuts: ShortcutsData) => void) => {
+    return listenOnIPCChannel("shortcuts:on-updated", callback);
+  }
+};
+
 // EXPOSE FLOW API //
-contextBridge.exposeInMainWorld("flow", {
+const flowAPI: typeof flow = {
   // App APIs
   app: wrapAPI(appAPI, "app"),
   windows: wrapAPI(windowsAPI, "app"),
   extensions: wrapAPI(extensionsAPI, "app"),
   updates: wrapAPI(updatesAPI, "app"),
+  actions: wrapAPI(actionsAPI, "app"),
+  shortcuts: wrapAPI(shortcutsAPI, "app"),
 
   // Browser APIs
   browser: wrapAPI(browserAPI, "browser"),
   tabs: wrapAPI(tabsAPI, "browser", {
-    newTab: "app"
+    newTab: "app",
+    disablePictureInPicture: "all"
   }),
   page: wrapAPI(pageAPI, "browser"),
   navigation: wrapAPI(navigationAPI, "browser"),
@@ -494,4 +529,5 @@ contextBridge.exposeInMainWorld("flow", {
   icons: wrapAPI(iconsAPI, "settings"),
   openExternal: wrapAPI(openExternalAPI, "settings"),
   onboarding: wrapAPI(onboardingAPI, "settings")
-});
+};
+contextBridge.exposeInMainWorld("flow", flowAPI);
