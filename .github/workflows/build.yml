@@ -18,7 +18,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pre-release:
+  # Runs before the build starts
+  before-build:
     runs-on: ubuntu-latest
     steps:
       - name: Comment PR with build status
@@ -30,8 +31,9 @@ jobs:
             Currently building for this pull request!
           comment-tag: build
 
-  release:
-    needs: pre-release
+  # Runs the build
+  build:
+    needs: before-build
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -115,8 +117,8 @@ jobs:
             dist/*.flatpak
 
   # Runs after all builds complete
-  comment-pr:
-    needs: release
+  after-build:
+    needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
