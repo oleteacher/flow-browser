@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Comment PR with build status
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         uses: thollander/actions-comment-pull-request@v3
         with:
           message: |
@@ -120,7 +120,7 @@ jobs:
   after-build:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     steps:
       - name: Comment PR with artifact links
         uses: thollander/actions-comment-pull-request@v3
