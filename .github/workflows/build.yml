@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
   # Run on every push to a pull request
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 # Cancel in-progress jobs when a new push is made to the same PR
@@ -72,7 +72,7 @@ jobs:
         run: python3 -m pip install --upgrade castlabs-evs --break-system-packages
 
       - name: Login to Castlabs EVS (macOS)
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest' && github.event_name != 'pull_request_target'
         continue-on-error: true
         run: python3 -m castlabs_evs.account --no-ask reauth -A $ACCOUNT_NAME -P $PASSWD
         env:
@@ -80,7 +80,7 @@ jobs:
           PASSWD: ${{ secrets.CASTLABS_EVS_PASSWORD }}
 
       - name: Login to Castlabs EVS (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest' && github.event_name != 'pull_request_target'
         continue-on-error: true
         shell: cmd
         run: python3 -m castlabs_evs.account --no-ask reauth -A "%ACCOUNT_NAME%" -P "%PASSWD%"
