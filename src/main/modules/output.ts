@@ -19,7 +19,7 @@ const DEBUG_AREAS = {
   AUTO_UPDATER: false, // @/modules/auto-update.ts
   CONTENT_BLOCKER: false, // @/modules/content-blocker.ts
   WEB_REQUESTS_INTERCEPTION: false, // @/browser/utility/web-requests.ts
-  WEB_REQUESTS: true, // @/browser/utility/web-requests.ts
+  WEB_REQUESTS: false, // @/browser/utility/web-requests.ts
   MATCH_PATTERN: false // @/browser/utility/match-pattern.ts
 } as const;
 
