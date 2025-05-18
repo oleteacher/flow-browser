@@ -1,11 +1,10 @@
 name: Code Quality Checks
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
 
   workflow_dispatch:
@@ -21,6 +20,8 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -71,7 +72,7 @@ jobs:
       - name: Commit changes if any
         if: steps.git-check.outputs.changes == 'true'
         run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "Github Actions"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "style: format code with prettier"
           git push
