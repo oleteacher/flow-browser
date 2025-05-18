@@ -64,6 +64,14 @@ export function hex_is_light(color: string) {
  * @returns The active favicon URL.
  */
 export function craftActiveFaviconURL(tabId: number, faviconURL: string | null) {
+  const faviconUrlObject = URL.parse(faviconURL ?? "");
+
+  // If the favicon URL is a data URL, just render it.
+  // No need to proxy it through the current tab's session.
+  if (faviconUrlObject?.protocol.toLowerCase() === "data:") {
+    return faviconURL;
+  }
+
   const urlObj = new URL("flow-internal://active-favicon");
 
   // Tab ID is used to identify the tab and grab the favicon
