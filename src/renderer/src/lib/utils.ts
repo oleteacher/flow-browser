@@ -69,7 +69,7 @@ export function craftActiveFaviconURL(tabId: number, faviconURL: string | null) 
   // If the favicon URL is a data URL, just render it.
   // No need to proxy it through the current tab's session.
   if (faviconUrlObject?.protocol.toLowerCase() === "data:") {
-    return faviconURL;
+    return faviconURL ?? undefined;
   }
 
   const urlObj = new URL("flow-internal://active-favicon");
