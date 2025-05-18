@@ -138,8 +138,7 @@ function initializeApp() {
   debugPrint("INITIALIZATION", "gotTheLock", gotTheLock);
 
   if (!gotTheLock) {
-    app.quit();
-    return;
+    return false;
   }
 
   // Print header
@@ -201,7 +200,8 @@ function initializeApp() {
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
-      return app.quit();
+      app.quit();
+      return;
     }
 
     // Quit app if onboarding isn't completed
@@ -223,7 +223,12 @@ function initializeApp() {
   app.on("open-url", async (_event, url) => {
     handleOpenUrl(url);
   });
+
+  return true;
 }
 
 // Start the application
-initializeApp();
+const initialized = initializeApp();
+if (!initialized) {
+  app.quit();
+}
