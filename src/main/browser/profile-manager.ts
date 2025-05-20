@@ -1,10 +1,9 @@
-import { app, BrowserWindow, dialog, Session } from "electron";
+import { BrowserWindow, dialog, Session } from "electron";
 import { getSession } from "@/browser/sessions";
 import { TypedEventEmitter } from "@/modules/typed-event-emitter";
 import { getProfile, getProfilePath, ProfileData } from "@/sessions/profiles";
 import { BrowserEvents } from "@/browser/events";
 import { Browser } from "@/browser/browser";
-import { FLAGS } from "@/modules/flags";
 import { ElectronChromeExtensions } from "electron-chrome-extensions";
 import { NEW_TAB_URL } from "@/browser/tabs/tab-manager";
 import { ExtensionInstallStatus, installChromeWebStore } from "electron-chrome-web-store";
@@ -13,6 +12,7 @@ import { setWindowSpace } from "@/ipc/session/spaces";
 import { registerWindow, WindowType } from "@/modules/windows";
 import { getSettingValueById } from "@/saving/settings";
 import { ExtensionManager } from "@/modules/extensions/management";
+import { transformUserAgentHeader } from "@/browser/utility/user-agent";
 
 /**
  * Represents a loaded browser profile
@@ -120,12 +120,11 @@ export class ProfileManager {
       const profilePath = getProfilePath(profileId);
 
       // Remove Electron and App details to closer emulate Chrome's UA
-      if (FLAGS.SCRUBBED_USER_AGENT) {
-        const userAgent = profileSession
-          .getUserAgent()
-          .replace(/\sElectron\/\S+/, "")
-          .replace(new RegExp(`\\s${app.getName()}/\\S+`, "i"), "");
-        profileSession.setUserAgent(userAgent);
+      const oldUserAgent = profileSession.getUserAgent();
+      const newUserAgent = transformUserAgentHeader(oldUserAgent, null);
+
+      if (oldUserAgent !== newUserAgent) {
+        profileSession.setUserAgent(newUserAgent);
       }
 
       // Setup Extensions
