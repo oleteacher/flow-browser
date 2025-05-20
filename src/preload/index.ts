@@ -105,12 +105,28 @@ function getOSFromPlatform(platform: NodeJS.Platform) {
 // POPUP POLYFILLS //
 // Polyfill some methods for popup windows
 function polyfillPopup() {
+  window.moveBy = (x: number, y: number) => {
+    if (typeof x !== "number" || typeof y !== "number") {
+      throw new Error("Invalid arguments: x and y must be provided as numbers");
+    }
+
+    flow.interface.moveWindowBy(x, y);
+  };
+
   window.moveTo = (x: number, y: number) => {
     if (typeof x !== "number" || typeof y !== "number") {
       throw new Error("Invalid arguments: x and y must be provided as numbers");
     }
 
     flow.interface.moveWindowTo(x, y);
+  };
+
+  window.resizeBy = (width: number, height: number) => {
+    if (typeof width !== "number" || typeof height !== "number") {
+      throw new Error("Invalid arguments: width and height must be provided as numbers");
+    }
+
+    flow.interface.resizeWindowBy(width, height);
   };
 
   window.resizeTo = (width: number, height: number) => {
@@ -282,8 +298,14 @@ const interfaceAPI: FlowInterfaceAPI = {
 
   // Special Exception: These are allowed on every tab, but very tightly secured.
   // They will only work in popup windows.
+  moveWindowBy: async (x: number, y: number) => {
+    return ipcRenderer.send("interface:move-window-by", x, y);
+  },
   moveWindowTo: async (x: number, y: number) => {
     return ipcRenderer.send("interface:move-window-to", x, y);
+  },
+  resizeWindowBy: async (width: number, height: number) => {
+    return ipcRenderer.send("interface:resize-window-by", width, height);
   },
   resizeWindowTo: async (width: number, height: number) => {
     return ipcRenderer.send("interface:resize-window-to", width, height);

@@ -24,16 +24,40 @@ export function toggleSidebar(win: TabbedBrowserWindow) {
 }
 
 // These methods are only available for popup windows
+function moveWindowTo(win: BrowserWindow, x: number, y: number) {
+  win.setPosition(x, y);
+}
+
+function resizeWindowTo(win: BrowserWindow, width: number, height: number) {
+  win.setSize(width, height);
+}
+
+ipcMain.on("interface:move-window-by", (event, x: number, y: number) => {
+  const win = browser?.getWindowFromWebContents(event.sender);
+  if (win && win.type === "popup") {
+    const position = win.window.getPosition();
+    moveWindowTo(win.window, position[0] + x, position[1] + y);
+  }
+});
+
 ipcMain.on("interface:move-window-to", (event, x: number, y: number) => {
   const win = browser?.getWindowFromWebContents(event.sender);
   if (win && win.type === "popup") {
-    win.window.setPosition(x, y);
+    moveWindowTo(win.window, x, y);
+  }
+});
+
+ipcMain.on("interface:resize-window-by", (event, width: number, height: number) => {
+  const win = browser?.getWindowFromWebContents(event.sender);
+  if (win && win.type === "popup") {
+    const size = win.window.getSize();
+    resizeWindowTo(win.window, size[0] + width, size[1] + height);
   }
 });
 
 ipcMain.on("interface:resize-window-to", (event, width: number, height: number) => {
   const win = browser?.getWindowFromWebContents(event.sender);
   if (win && win.type === "popup") {
-    win.window.setSize(width, height);
+    resizeWindowTo(win.window, width, height);
   }
 });
