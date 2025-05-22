@@ -226,6 +226,9 @@ ipcMain.handle("tabs:set-tab-muted", async (_event, tabId: number, muted: boolea
 
   tab.webContents.setAudioMuted(muted);
 
+  // No event for mute state change, so we need to update the tab state manually
+  tab.updateTabState();
+
   return true;
 });
 
