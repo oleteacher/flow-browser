@@ -10,6 +10,7 @@ export type TabData = {
   uniqueId: string;
   createdAt: number;
   lastActiveAt: number;
+  position: number;
 
   profileId: string;
   spaceId: string;
@@ -36,6 +37,7 @@ export type TabGroupData = {
   spaceId: string;
   tabIds: number[];
   glanceFrontTabId?: number;
+  position: number;
 };
 
 export type WindowFocusedTabIds = {

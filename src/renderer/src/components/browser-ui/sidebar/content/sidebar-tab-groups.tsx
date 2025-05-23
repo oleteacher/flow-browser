@@ -2,10 +2,17 @@ import { Button } from "@/components/ui/button";
 import { SidebarMenuButton, useSidebar } from "@/components/ui/resizable-sidebar";
 import { cn, craftActiveFaviconURL } from "@/lib/utils";
 import { XIcon, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { TabGroup } from "@/components/providers/tabs-provider";
+import {
+  draggable,
+  dropTargetForElements,
+  ElementDropTargetEventBasePayload
+} from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { attachClosestEdge, extractClosestEdge, Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { TabData } from "~/types/tabs";
+import { DropIndicator } from "@/components/browser-ui/sidebar/content/space-sidebar";
 
 const MotionSidebarMenuButton = motion(SidebarMenuButton);
 
@@ -118,7 +125,7 @@ export function SidebarTab({ tab, isFocused }: { tab: TabData; isFocused: boolea
                   src={craftActiveFaviconURL(tab.id, tab.faviconURL)}
                   //src={tab.faviconURL || undefined}
                   alt={tab.title}
-                  className="size-full rounded-sm"
+                  className="size-full rounded-sm user-drag-none object-contain overflow-hidden"
                   onError={() => setIsError(true)}
                   onClick={handleClick}
                   onMouseDown={handleMouseDown}
@@ -177,27 +184,145 @@ export function SidebarTab({ tab, isFocused }: { tab: TabData; isFocused: boolea
   );
 }
 
+export type TabGroupSourceData = {
+  type: "tab-group";
+  tabGroupId: number;
+  primaryTabId: number;
+  profileId: string;
+  spaceId: string;
+  position: number;
+};
+
 export function SidebarTabGroups({
   tabGroup,
-  isFocused
+  isFocused,
+  isSpaceLight,
+  position,
+  moveTab
 }: {
   tabGroup: TabGroup;
   isActive: boolean; // isActive might still be needed depending on parent component logic
   isFocused: boolean;
+  isSpaceLight: boolean;
+  position: number;
+  moveTab: (tabId: number, newPosition: number) => void;
 }) {
   const { tabs, focusedTab } = tabGroup;
+  const ref = useRef<HTMLDivElement>(null);
+
+  const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return () => {};
+
+    function onChange({ self }: ElementDropTargetEventBasePayload) {
+      const closestEdge = extractClosestEdge(self.data);
+      setClosestEdge(closestEdge);
+    }
+
+    function onDrop(args: ElementDropTargetEventBasePayload) {
+      const closestEdgeOfTarget: Edge | null = extractClosestEdge(args.self.data);
+
+      setClosestEdge(null);
+
+      const sourceData = args.source.data as TabGroupSourceData;
+      const sourceTabId = sourceData.primaryTabId;
+
+      let newPos: number | undefined = undefined;
+
+      if (closestEdgeOfTarget === "top") {
+        newPos = position - 0.5;
+      } else if (closestEdgeOfTarget === "bottom") {
+        newPos = position + 0.5;
+      }
+
+      if (sourceData.spaceId != tabGroup.spaceId) {
+        if (sourceData.profileId != tabGroup.profileId) {
+          // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
+        } else {
+          // move tab to new space
+          flow.tabs.moveTabToWindowSpace(sourceTabId, tabGroup.spaceId, newPos);
+        }
+      } else if (newPos !== undefined) {
+        moveTab(sourceTabId, newPos);
+      }
+    }
+
+    const draggableCleanup = draggable({
+      element: el,
+      getInitialData: () => {
+        const data: TabGroupSourceData = {
+          type: "tab-group",
+          tabGroupId: tabGroup.id,
+          primaryTabId: tabGroup.tabs[0].id,
+          profileId: tabGroup.profileId,
+          spaceId: tabGroup.spaceId,
+          position: position
+        };
+        return data;
+      }
+    });
+
+    const cleanupDropTarget = dropTargetForElements({
+      element: el,
+      getData: ({ input, element }) => {
+        // this will 'attach' the closest edge to your `data` object
+        return attachClosestEdge(
+          {},
+          {
+            input,
+            element,
+            // you can specify what edges you want to allow the user to be closest to
+            allowedEdges: ["top", "bottom"]
+          }
+        );
+      },
+      canDrop: (args) => {
+        const sourceData = args.source.data as TabGroupSourceData;
+        if (sourceData.type !== "tab-group") {
+          return false;
+        }
+
+        if (sourceData.tabGroupId === tabGroup.id) {
+          return false;
+        }
+
+        if (sourceData.profileId !== tabGroup.profileId) {
+          // TODO: @MOVE_TABS_BETWEEN_PROFILES not supported yet
+          return false;
+        }
+
+        return true;
+      },
+      onDrop: onDrop,
+      onDragEnter: onChange,
+      onDrag: onChange,
+      onDragLeave: () => setClosestEdge(null)
+    });
+
+    return () => {
+      draggableCleanup();
+      cleanupDropTarget();
+    };
+  }, [moveTab, tabGroup.id, position, tabGroup.tabs, tabGroup.spaceId, tabGroup.profileId]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      layout
-      className="space-y-0.5" // Removed split mode specific padding and background
-    >
-      {tabs.map((tab) => (
-        <SidebarTab key={tab.id} tab={tab} isFocused={isFocused && focusedTab?.id === tab.id} />
-      ))}
-    </motion.div>
+    <>
+      {closestEdge == "top" && <DropIndicator isSpaceLight={isSpaceLight} />}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        layout
+        className={cn("space-y-0.5")}
+        ref={ref}
+      >
+        {tabs.map((tab) => (
+          <SidebarTab key={tab.id} tab={tab} isFocused={isFocused && focusedTab?.id === tab.id} />
+        ))}
+      </motion.div>
+      {closestEdge == "bottom" && <DropIndicator isSpaceLight={isSpaceLight} />}
+    </>
   );
 }

@@ -237,6 +237,14 @@ const tabsAPI: FlowTabsAPI = {
     return ipcRenderer.send("tabs:show-context-menu", tabId);
   },
 
+  moveTab: async (tabId: number, newPosition: number) => {
+    return ipcRenderer.invoke("tabs:move-tab", tabId, newPosition);
+  },
+
+  moveTabToWindowSpace: async (tabId: number, spaceId: string, newPosition?: number) => {
+    return ipcRenderer.invoke("tabs:move-tab-to-window-space", tabId, spaceId, newPosition);
+  },
+
   // Special Exception: This is allowed for all internal protocols.
   newTab: async (url?: string, isForeground?: boolean, spaceId?: string) => {
     return ipcRenderer.invoke("tabs:new-tab", url, isForeground, spaceId);
