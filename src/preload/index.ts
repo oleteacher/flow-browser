@@ -13,6 +13,7 @@ import type { SpaceData } from "@/sessions/spaces";
 import type { SharedExtensionData } from "~/types/extensions";
 import type { WindowTabsData } from "~/types/tabs";
 import type { UpdateStatus } from "~/types/updates";
+import type { WindowState } from "~/flow/types";
 
 // API TYPES //
 import { FlowBrowserAPI } from "~/flow/interfaces/browser/browser";
@@ -306,6 +307,23 @@ const interfaceAPI: FlowInterfaceAPI = {
   },
   setComponentWindowVisible: (componentId: string, visible: boolean) => {
     return ipcRenderer.send("interface:set-component-window-visible", componentId, visible);
+  },
+
+  minimizeWindow: () => {
+    return ipcRenderer.send("interface:minimize-window");
+  },
+  maximizeWindow: () => {
+    return ipcRenderer.send("interface:maximize-window");
+  },
+  closeWindow: () => {
+    return ipcRenderer.send("interface:close-window");
+  },
+
+  getWindowState: () => {
+    return ipcRenderer.invoke("interface:get-window-state");
+  },
+  onWindowStateChanged: (callback: (state: WindowState) => void) => {
+    return listenOnIPCChannel("interface:window-state-changed", callback);
   },
 
   // Special Exception: These are allowed on every tab, but very tightly secured.

@@ -1,4 +1,4 @@
-import { IPCListener, PageBounds } from "~/flow/types";
+import { IPCListener, PageBounds, WindowState } from "~/flow/types";
 
 // API //
 export interface FlowInterfaceAPI {
@@ -55,4 +55,29 @@ export interface FlowInterfaceAPI {
    * Resizes popup window to a specific size
    */
   resizeWindowTo: (width: number, height: number) => void;
+
+  /**
+   * Minimizes the window
+   */
+  minimizeWindow: () => void;
+
+  /**
+   * Maximizes the window
+   */
+  maximizeWindow: () => void;
+
+  /**
+   * Closes the window
+   */
+  closeWindow: () => void;
+
+  /**
+   * Gets the state of the window
+   */
+  getWindowState: () => Promise<WindowState>;
+
+  /**
+   * Adds a callback to be called when the window state changes
+   */
+  onWindowStateChanged: IPCListener<[WindowState]>;
 }

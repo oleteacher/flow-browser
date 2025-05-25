@@ -11,6 +11,7 @@ import { WindowEventType } from "@/modules/windows";
 import { windowEvents } from "@/modules/windows";
 import { initializePortalComponentWindows } from "@/browser/components/portal-component-windows";
 import { defaultSessionReady } from "@/browser/sessions";
+import { fireWindowStateChanged } from "@/ipc/browser/interface";
 
 type BrowserWindowType = "normal" | "popup";
 
@@ -50,7 +51,7 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
       minHeight: type === "normal" ? 400 : 200,
       width: 1280,
       height: 720,
-      titleBarStyle: "hidden",
+      titleBarStyle: process.platform === "darwin" ? "hidden" : undefined,
       titleBarOverlay: {
         height: 30,
         symbolColor: nativeTheme.shouldUseDarkColors ? "white" : "black",
@@ -89,11 +90,20 @@ export class TabbedBrowserWindow extends TypedEventEmitter<BrowserWindowEvents> 
     this.window.on("enter-full-screen", () => {
       this.emit("enter-full-screen");
       this._updateWindowButtonVisibility();
+      fireWindowStateChanged(this);
     });
 
     this.window.on("leave-full-screen", () => {
       this.emit("leave-full-screen");
       this._updateWindowButtonVisibility();
+      fireWindowStateChanged(this);
+    });
+
+    this.window.on("maximize", () => {
+      fireWindowStateChanged(this);
+    });
+    this.window.on("unmaximize", () => {
+      fireWindowStateChanged(this);
     });
 
     // Focus on the focused tab
