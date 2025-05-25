@@ -1,6 +1,6 @@
 import { TypedEventEmitter } from "@/modules/typed-event-emitter";
 import { TabbedBrowserWindow } from "@/browser/window";
-import { app, components, WebContents } from "electron";
+import { app, WebContents } from "electron";
 import { BrowserEvents } from "@/browser/events";
 import { ProfileManager, LoadedProfile } from "@/browser/profile-manager";
 import { WindowManager, BrowserWindowType, BrowserWindowCreationOptions } from "@/browser/window-manager";
@@ -10,6 +10,8 @@ import { setupMenu } from "@/browser/utility/menu";
 import { settings } from "@/settings/main";
 import { onboarding } from "@/onboarding/main";
 import "@/modules/extensions/main";
+import { waitForElectronComponentsToBeReady } from "@/modules/electron-components";
+import { debugPrint } from "@/modules/output";
 
 /**
  * Main Browser controller that coordinates browser components
@@ -90,10 +92,10 @@ export class Browser extends TypedEventEmitter<BrowserEvents> {
 
     // Wait for WidevineCDM to be ready
     // Could fail, but we don't care
-    await components
-      .whenReady()
-      .then(() => true)
-      .catch(() => false);
+    const isReady = await waitForElectronComponentsToBeReady();
+    if (!isReady) {
+      debugPrint("INITIALIZATION", "WidevineCDM is not ready");
+    }
 
     // Create the window
     return this.createWindowInternal(type, options);
