@@ -56,7 +56,7 @@
       "role": "Viewer"
     }
   ],
-  "asarUnpack": ["assets/**"],
+  "asarUnpack": ["assets/**", "node_modules/@img/**"],
   "win": {
     "executableName": "flow",
     "verifyUpdateCodeSignature": false
@@ -77,13 +77,15 @@
   },
   "linux": {
     "target": ["AppImage", "deb", "flatpak"],
-    "category": "Utility"
+    "category": "Network;WebBrowser;",
+    "executableArgs": ["--ozone-platform-hint=auto"],
+    "icon": "build/icon.png"
   },
   "appImage": {
-    "artifactName": "${name}-${version}.${ext}"
+    "artifactName": "${name}-${version}-${arch}.${ext}"
   },
   "flatpak": {
-    "artifactName": "${name}-${version}.${ext}"
+    "artifactName": "${name}-${version}-${arch}.${ext}"
   },
   "npmRebuild": false,
   "publish": {
