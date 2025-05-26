@@ -1,3 +1,4 @@
+import { PlatformConsumer } from "@/components/main/platform";
 import { useCopyStyles } from "@/hooks/use-copy-styles";
 import { useCssSizeToPixels } from "@/hooks/use-css-size-to-pixels";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
@@ -151,7 +152,7 @@ export function PortalComponent({
         height: heightInPixels
       }}
     >
-      {children}
+      <PlatformConsumer>{children}</PlatformConsumer>
     </PortalContext.Provider>
   );
 

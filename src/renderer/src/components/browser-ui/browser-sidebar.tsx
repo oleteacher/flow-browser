@@ -21,7 +21,6 @@ import { PortalComponent } from "@/components/portal/portal";
 import { SidebarWindowControls } from "@/components/browser-ui/sidebar/header/window-controls";
 import { motion, AnimatePresence } from "motion/react";
 import { SidebarFooterUpdate } from "@/components/browser-ui/sidebar/footer/update";
-import { PlatformProvider } from "@/components/main/platform";
 
 type BrowserSidebarProps = {
   collapseMode: CollapseMode;
@@ -270,7 +269,7 @@ export function BrowserSidebar({ collapseMode, variant, side, setIsHoveringSideb
         height="100%"
         anchorX={side === "left" ? "left" : "right"}
       >
-        <PlatformProvider>{sidebarContent}</PlatformProvider>
+        {sidebarContent}
       </PortalComponent>
     );
   }
