@@ -18,6 +18,10 @@ export function SidebarTabDropTarget({ spaceData, isSpaceLight, moveTab, biggest
   const [showDropIndicator, setShowDropIndicator] = useState(false);
   const dropTargetRef = useRef<HTMLDivElement>(null);
 
+  const handleDoubleClick = () => {
+    flow.newTab.open();
+  };
+
   useEffect(() => {
     const el = dropTargetRef.current;
     if (!el) return () => {};
@@ -73,7 +77,7 @@ export function SidebarTabDropTarget({ spaceData, isSpaceLight, moveTab, biggest
   return (
     <>
       {showDropIndicator && <DropIndicator isSpaceLight={isSpaceLight} />}
-      <div className="flex-1 flex flex-col" ref={dropTargetRef}></div>
+      <div className="flex-1 flex flex-col" ref={dropTargetRef} onDoubleClick={handleDoubleClick}></div>
     </>
   );
 }
