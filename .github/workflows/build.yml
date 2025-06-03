@@ -34,7 +34,7 @@ jobs:
 
   # Runs the build
   build:
-    needs: before-build
+    needs: before-build-comment
     runs-on: ${{ matrix.os }}
 
     strategy:
