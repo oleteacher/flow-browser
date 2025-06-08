@@ -18,12 +18,16 @@ export function transformUserAgentHeader(userAgent: string, url: URL | null) {
 
   // Remove App User Agent:
   // - Flow will be less identifiable
-  const removeAppUserAgent = false;
+  let removeAppUserAgent = false;
 
   if (url) {
-    // const hostname = url.hostname.toLowerCase();
-    // if (hostname === "accounts.google.com") {
-    // }
+    const hostname = url.hostname.toLowerCase();
+
+    // WhatsApp does not like the 'Flow' User Agent
+    // Removing it fixes the issue and finally lets us use https://web.whatsapp.com/
+    if (hostname.endsWith(".whatsapp.com")) {
+      removeAppUserAgent = true;
+    }
   }
 
   if (removeElectronUserAgent) {
