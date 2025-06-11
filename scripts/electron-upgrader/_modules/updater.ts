@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as jju from "jju";
+import { BunLock } from "@/_types/bun-lock";
+import { PackageJson } from "@/_types/package-json";
 
 const DEP_PREFIX = "github:castlabs/electron-releases#";
 const HASH_PREFIX = "electron@git+ssh://github.com/castlabs/electron-releases#";
@@ -20,7 +22,7 @@ export function updatePackageJson(electronVersion: string) {
 
   // Read and parse package.json with jju to preserve formatting and comments
   const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
-  const packageJson = jju.parse(packageJsonContent);
+  const packageJson = jju.parse(packageJsonContent) as PackageJson;
 
   // Update the electron dependency
   if (packageJson.devDependencies && packageJson.devDependencies.electron) {
@@ -58,7 +60,7 @@ export function updateBunLock(electronVersion: string, commitHash: string) {
   const bunLockContent = fs.readFileSync(bunLockPath, "utf8");
 
   // Parse with jju using a more lenient mode
-  let bunLock;
+  let bunLock: BunLock;
   try {
     bunLock = jju.parse(bunLockContent, {
       mode: "json5" // Use JSON5 mode to handle trailing commas
@@ -89,4 +91,43 @@ export function updateBunLock(electronVersion: string, commitHash: string) {
   });
 
   fs.writeFileSync(bunLockPath, updatedContent);
+}
+
+/**
+ * Increments the electron-updater version configuration.
+ */
+export function incrementElectronUpdaterVersionConfiguration() {
+  const scriptPath = path.join(process.cwd(), "scripts", "electron-upgrader", "_modules", "github.ts");
+
+  const scriptContent = fs.readFileSync(scriptPath, "utf8");
+
+  // Extract current version numbers
+  const nextMajorMatch = scriptContent.match(/const NEXT_MAJOR_VERSION = (\d+);/);
+  const currentMajorMatch = scriptContent.match(/const CURRENT_MAJOR_VERSION = (\d+);/);
+
+  if (!nextMajorMatch || !currentMajorMatch) {
+    throw new Error("Could not find version constants in github.ts");
+  }
+
+  const currentNextMajor = parseInt(nextMajorMatch[1], 10);
+  const currentCurrentMajor = parseInt(currentMajorMatch[1], 10);
+
+  // Increment both versions by 1
+  const newNextMajor = currentNextMajor + 1;
+  const newCurrentMajor = currentCurrentMajor + 1;
+
+  // Replace the version constants
+  const updatedContent = scriptContent
+    .replace(`const NEXT_MAJOR_VERSION = ${currentNextMajor};`, `const NEXT_MAJOR_VERSION = ${newNextMajor};`)
+    .replace(
+      `const CURRENT_MAJOR_VERSION = ${currentCurrentMajor};`,
+      `const CURRENT_MAJOR_VERSION = ${newCurrentMajor};`
+    );
+
+  // Write the updated content back to the file
+  fs.writeFileSync(scriptPath, updatedContent);
+
+  console.log(`Updated version constants:`);
+  console.log(`  NEXT_MAJOR_VERSION: ${currentNextMajor} → ${newNextMajor}`);
+  console.log(`  CURRENT_MAJOR_VERSION: ${currentCurrentMajor} → ${newCurrentMajor}`);
 }
