@@ -237,19 +237,23 @@ function initializeApp() {
     if (!queuedQuit) {
       queuedQuit = true;
 
+      const promises: Promise<void>[] = [];
+
       for (const session of loadedProfileSessions) {
         // Flush storage data
         session.flushStorageData();
 
         // Flush cookies
         const cookies = session.cookies;
-        cookies.flushStore();
+        promises.push(cookies.flushStore());
       }
 
-      setTimeout(() => {
-        allowQuit = true;
-        app.quit();
-      }, 200);
+      Promise.all(promises).then(() => {
+        setTimeout(() => {
+          allowQuit = true;
+          app.quit();
+        }, 50);
+      });
     }
   });
 
