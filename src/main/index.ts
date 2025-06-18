@@ -10,7 +10,7 @@ import "@/modules/auto-update";
 import "@/modules/posthog";
 import "@/modules/content-blocker";
 import { debugPrint } from "@/modules/output";
-import { loadedProfileSessions } from "@/browser/profile-manager";
+import { setupQuitHandler } from "@/modules/quit-handlers";
 
 export let browser: Browser | null = null;
 
@@ -225,38 +225,7 @@ function initializeApp() {
     handleOpenUrl(url);
   });
 
-  let allowQuit = false;
-  let queuedQuit = false;
-  app.on("before-quit", (event) => {
-    if (allowQuit) {
-      return;
-    }
-
-    event.preventDefault();
-
-    if (!queuedQuit) {
-      queuedQuit = true;
-
-      const promises: Promise<void>[] = [];
-
-      for (const session of loadedProfileSessions) {
-        // Flush storage data
-        session.flushStorageData();
-
-        // Flush cookies
-        const cookies = session.cookies;
-        promises.push(cookies.flushStore());
-      }
-
-      Promise.all(promises).then(() => {
-        setTimeout(() => {
-          allowQuit = true;
-          app.quit();
-        }, 50);
-      });
-    }
-  });
-
+  setupQuitHandler();
   return true;
 }
 
