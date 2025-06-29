@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
 
-const STRICT_MODE_ENABLED = true;
+const STRICT_MODE_ENABLED = false;
 
 const StrictMode = STRICT_MODE_ENABLED ? ReactStrictMode : Fragment;
 
