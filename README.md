@@ -14,26 +14,7 @@ A modern, tabbed web browser with Chrome extension support—built on Electron.
 
 Flow Browser is a lightweight, feature-rich web browser that combines the power of Chromium with a clean, modern interface. Built on Electron, it offers full support for Chrome extensions, making it a versatile alternative to mainstream browsers.
 
-## Install (v0.8.1)
-
-> [!WARNING]
->
-> macOS's version is not currently code-signed!
->
-> If you just download it from your browser, it will be blocked by [Gatekeeper](https://disable-gatekeeper.github.io/), which says 'This application is damaged' and will not let you open it.
-
-### macOS:
-
-```bash
-# Run this command in your terminal
-curl -LO https://github.com/MultiboxLabs/flow-browser/releases/download/v0.8.1/flow-browser-0.8.1.dmg && open .
-```
-
-### Windows:
-
-Download [FlowSetup.exe](https://github.com/MultiboxLabs/flow-browser/releases/download/v0.8.1/flow-browser-0.8.1-setup.exe)
-
-### Linux:
+## Install
 
 Choose the file you need and [download from GitHub Releases](https://github.com/MultiboxLabs/flow-browser/releases).
 
