@@ -28,12 +28,7 @@ const MOCK_DATA: MockUpdateData = {
 };
 // END MOCK DATA //
 
-const SUPPORTED_PLATFORMS: NodeJS.Platform[] = [
-  "win32",
-  "linux"
-  // TODO: Add macOS (Requires Code Signing)
-  // "darwin"
-];
+const SUPPORTED_PLATFORMS: NodeJS.Platform[] = ["win32", "linux", "darwin"];
 
 let availableUpdate: UpdateInfo | null = null;
 let downloadProgress: ProgressInfo | null = null;
