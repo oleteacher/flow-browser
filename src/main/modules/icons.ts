@@ -64,6 +64,36 @@ export const icons = [
     id: "summer",
     name: "Summer",
     image_id: "summer.png"
+  },
+  {
+    id: "aquatic",
+    name: "Aquatic",
+    image_id: "aquatic.png",
+    author: "CK4C"
+  },
+  {
+    id: "digital",
+    name: "Digital",
+    image_id: "digital.png",
+    author: "CK4C"
+  },
+  {
+    id: "dynamic",
+    name: "Dynamic",
+    image_id: "dynamic.png",
+    author: "CK4C"
+  },
+  {
+    id: "futuristic",
+    name: "Futuristic",
+    image_id: "futuristic.png",
+    author: "CK4C"
+  },
+  {
+    id: "galactic",
+    name: "Galactic",
+    image_id: "galactic.png",
+    author: "CK4C"
   }
 ] as const satisfies IconData[];
 
